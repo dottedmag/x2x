@@ -330,7 +330,7 @@ static Bool    doCapsLkHack = False;
 static char *fromWinName = "x2xFromWin";
 static int dummy;
 static Display *fromWin = (Display *)&dummy; 
-
+static HWND hWndSave;
 static HINSTANCE m_instance;
 #endif
 
@@ -2024,22 +2024,62 @@ void MoveWindowToEdge(PDPYINFO pDpyInfo) {
 	       SWP_SHOWWINDOW | SWP_NOREDRAW);
 
   pDpyInfo->onedge=1;
+
+  SetForegroundWindow(hWndSave);
 }
 
 int MoveWindowToScreen(PDPYINFO pDpyInfo)
 {
   int notfg;
+  LPINPUT pInputs; 
 
   if(!pDpyInfo->onedge) return 1;
 #ifdef DEBUG
   printf("MoveWindowToScreen\n");
 #endif
 
+  hWndSave = GetForegroundWindow();
+
   if ((notfg = (SetForegroundWindow(pDpyInfo->bigwindow) == 0))) {
 #ifdef DEBUG
     printf("Did not become foreground\n");
 #endif
-    return 0;
+
+    /* This code thanks to Thomas Chadwick */
+    /* Fakes that the user clicked the mouse to move the focus */
+    /* This is to deal with the XP and 2000 behaviour that attempts to */
+    /* prevent an application from stealing the focus */
+#ifdef DEBUG
+    printf("Using SendInput to synthesize a mouse click\n");
+#endif
+
+    pInputs = (LPINPUT) malloc (2*sizeof(INPUT));
+
+    pInputs[0].type           = INPUT_MOUSE;
+    pInputs[0].mi.dx          = 0;
+    pInputs[0].mi.dy          = 0;
+    pInputs[0].mi.mouseData   = 0;
+    pInputs[0].mi.dwFlags     = MOUSEEVENTF_LEFTDOWN;
+    pInputs[0].mi.time        = 0;
+    pInputs[0].mi.dwExtraInfo = 0;
+
+    pInputs[1].type           = INPUT_MOUSE;
+    pInputs[1].mi.dx          = 0;
+    pInputs[1].mi.dy          = 0;
+    pInputs[1].mi.mouseData   = 0;
+    pInputs[1].mi.dwFlags     = MOUSEEVENTF_LEFTUP;
+    pInputs[1].mi.time        = 0;
+    pInputs[1].mi.dwExtraInfo = 0;
+
+    if (SendInput(2, pInputs, sizeof(INPUT)) == 0) {
+#ifdef DEBUG
+      printf("SendInput failed\n");
+#endif
+      free(pInputs);
+      return 0;
+    }
+    free(pInputs);
+    return 1; 
   }
   SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
 	       0, 0,
@@ -2555,8 +2595,16 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 #ifdef DEBUG
 	  printf("INCR screen %d: ", toScreenNum);
 #endif 
-	  DoWinDisconnect(pDpyInfo, x, y);
-	  fromX = pDpyInfo->fromXDisc;
+	  if (doBtnBlock &&
+	      (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
+#ifdef DEBUG
+	    printf("Disconnect aborted by button state 0x%x\n",
+		   (unsigned int)keyflags);
+#endif
+	  } else {
+	    DoWinDisconnect(pDpyInfo, x, y);
+	    fromX = pDpyInfo->fromXDisc;
+	  }
 	  toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
 	}
       } else { /* DECR */
@@ -2568,8 +2616,16 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 #ifdef DEBUG
 	  printf("DECR screen %d: ", toScreenNum);
 #endif 
-	  DoWinDisconnect(pDpyInfo, x, y);
-	  fromX = pDpyInfo->fromXDisc;
+	  if (doBtnBlock &&
+	      (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
+#ifdef DEBUG
+	    printf("Disconnect aborted by button state 0x%x\n", 
+		   (unsigned int)keyflags);
+#endif
+	  } else {
+	    DoWinDisconnect(pDpyInfo, x, y);
+	    fromX = pDpyInfo->fromXDisc;
+	  }
 	  toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
 	}
       } /* END if toX */
@@ -2682,6 +2738,13 @@ DWORD keyData;
   int i;
   int winShift = 0;
 
+  /* Attempt to discard spurious keys and 'fake' loss of focus */
+  if (pDpyInfo->onedge && down) {
+#ifdef DEBUG
+    printf("Ignore key while onedge\n");
+#endif
+    return;
+  }
   // if virtkey found in mapping table, send X equivalent
   // else
   //   try to convert directly to ascii
