@@ -5,26 +5,26 @@
  *
  * Copyright (c) 1997
  * Digital Equipment Corporation.  All rights reserved.
- * 
+ *
  * By downloading, installing, using, modifying or distributing this
  * software, you agree to the following:
- * 
+ *
  * 1. CONDITIONS. Subject to the following conditions, you may download,
  * install, use, modify and distribute this software in source and binary
  * forms:
- * 
+ *
  * a) Any source code, binary code and associated documentation
  * (including the online manual) used, modified or distributed must
  * reproduce and retain the above copyright notice, this list of
  * conditions and the following disclaimer.
- * 
+ *
  * b) No right is granted to use any trade name, trademark or logo of
  * Digital Equipment Corporation.  Neither the "Digital Equipment
  * Corporation" name nor any trademark or logo of Digital Equipment
  * Corporation may be used to endorse or promote products derived from
  * this software without the prior written permission of Digital
  * Equipment Corporation.
- * 
+ *
  * 2.  DISCLAIMER.  THIS SOFTWARE IS PROVIDED BY DIGITAL "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -38,7 +38,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Cygwin version with -fromwin to allow source to be a Windows 
+/* Cygwin version with -fromwin to allow source to be a Windows
  * machine that is not running a X server.
  * Adapted by Mark Hayter 2003 using win2vnc ClientConnect.cpp code
  *
@@ -67,7 +67,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 //  USA.
 //
-// If the source code for the VNC system is not available from the place 
+// If the source code for the VNC system is not available from the place
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
@@ -155,7 +155,7 @@ static Format toDpyFormat[] = {
 /* indexes of values to be filled in at runtime */
 #define toDpyLeftIndex    2
 #define toDpyTopIndex     4
-#define toDpyStringIndex 10 
+#define toDpyStringIndex 10
 
 /**********
  * stuff for selection forwarding
@@ -234,7 +234,7 @@ typedef struct {
   int     winSSave;
   int     nXbuttons;
 #endif /* WIN_2_X */
-  
+
   /* stuff on "to" display */
   Display *toDpy;
   Window  selWin;
@@ -261,7 +261,7 @@ typedef struct {
 
   /* for recording state of buttons and keys */
   PFAKE   pFakeThings;
-  
+
 } DPYINFO, *PDPYINFO;
 
 /* shadow displays */
@@ -330,7 +330,7 @@ static Bool    doClipCheck = False;
 /* These are used to allow pointer comparisons */
 static char *fromWinName = "x2xFromWin";
 static int dummy;
-static Display *fromWin = (Display *)&dummy; 
+static Display *fromWin = (Display *)&dummy;
 static HWND hWndSave;
 static HINSTANCE m_instance;
 #endif
@@ -371,7 +371,7 @@ char **argv;
   Display *fromDpy;
   PSHADOW pShadow;
 
-#endif /* WIN_2_X */ 
+#endif /* WIN_2_X */
 
   XrmInitialize();
   ParseCommandLine(argc, argv);
@@ -402,7 +402,7 @@ char **argv;
     /* ... qualifies this while in WIN_2_X case with an X source */
   while ((fromDpy = XOpenDisplay(fromDpyName)) == NULL) {
     if (!waitDpy) {
-      fprintf(stderr, "%s - error: can not open display %s\n", 
+      fprintf(stderr, "%s - error: can not open display %s\n",
 	      programStr, fromDpyName);
       exit(2);
     } /* END if */
@@ -437,7 +437,7 @@ char **argv;
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
     XCloseDisplay(pShadow->dpy);
   exit(0);
-  
+
 } /* END main */
 
 static Display *OpenAndCheckDisplay(name)
@@ -449,7 +449,7 @@ char *name;
   name = XDisplayName(name);
   while ((openDpy = XOpenDisplay(name)) == NULL) {
     if (!waitDpy) {
-      fprintf(stderr, "%s - error: can not open display %s\n", 
+      fprintf(stderr, "%s - error: can not open display %s\n",
 	      programStr, name);
       return NULL;
     } /* END if */
@@ -463,7 +463,7 @@ char *name;
     return NULL;
   }
   return (openDpy);
-  
+
 } /* END OpenAndCheckDisplay */
 
 /**********
@@ -481,7 +481,7 @@ char **argv;
 
 #ifdef DEBUG
   printf ("programStr = %s\n", programStr);
-#endif  
+#endif
 
   for (arg = 1; arg < argc; ++arg) {
 #ifdef WIN_2_X
@@ -492,10 +492,10 @@ char **argv;
       doBig = True;
       if (doEdge == EDGE_NONE) doEdge = EDGE_WEST;
       doCapsLkHack = True;
-      
+
 #ifdef DEBUG
       printf ("fromDpyName = %s\n", fromDpyName);
-#endif  
+#endif
     } else
       /* Note this else will qualify the if below... */
 #endif /* WIN_2_X */
@@ -505,7 +505,7 @@ char **argv;
 
 #ifdef DEBUG
       printf ("fromDpyName = %s\n", fromDpyName);
-#endif  
+#endif
     } else if (!strcasecmp(argv[arg], "-to")) {
       if (++arg >= argc) Usage();
       toDpyName = argv[arg];
@@ -613,11 +613,11 @@ char **argv;
       if (++arg >= argc) Usage();
       pShadow = (PSHADOW)malloc(sizeof(SHADOW));
       pShadow->name = argv[arg];
-      
+
       /* into the global list of shadows */
       pShadow->pNext = shadows;
       shadows = pShadow;
-      
+
     } else if (!strcasecmp(argv[arg], "-triggerw")) {
       if (++arg >= argc) Usage();
       triggerw = atoi(argv[arg]);
@@ -661,7 +661,7 @@ static void Usage()
   printf("C:\\cygwin\\usr\\X11R6\\bin\\run.exe /usr/X11R6/bin/x2x -fromwin -to <to> -east\n");
   printf("Should work to start the app from the desktop or start menu, but\n");
   printf("c:\\cygwin\\bin may need to be added to the PATH to get cygwin1.dll\n");
-#endif 
+#endif
   exit(4);
 
 } /* END Usage */
@@ -699,7 +699,7 @@ Display *toDpy;
   dpyInfo.toDpy = toDpy;
   InitDpyInfo(&dpyInfo);
   RegisterEventHandlers(&dpyInfo);
-  
+
   /* set up for select */
 #ifdef WIN_2_X
   fromConn = (fromDpy == fromWin) ? 0 : XConnectionNumber(fromDpy);
@@ -721,7 +721,7 @@ Display *toDpy;
     /* XXX mdh - when there are From events                            */
     /* This is mostly ok, but can cause windows->X paste to take a while */
     /* As a compromise, try a 1 second tick to cause polling */
-    
+
     SetTimer(dpyInfo.bigwindow, 1, 1000 /* in ms */, NULL);
     /* GetMessage blocks until the next Windows event */
     /* It returns 0 if the app should quit */
@@ -748,7 +748,7 @@ Display *toDpy;
 	  TranslateMessage (&msg);
 	  DispatchMessage (&msg);
 	}
-      } 
+      }
     }
   } else
     /* Again, the else qualifies the while below */
@@ -760,7 +760,7 @@ Display *toDpy;
 
     if (XPending(toDpy)) {
       if (ProcessEvent(toDpy, &dpyInfo)) /* done! */
-	break; 
+	break;
     } else if (!fromPending) {
       FD_ZERO(&fdset);
       FD_SET(fromConn, &fdset);
@@ -797,7 +797,7 @@ PDPYINFO pDpyInfo;
   XSizeHints *xsh;
   int       eventMask;
   GC        textGC;
-  char      *windowName;  
+  char      *windowName;
   XFS       *font;
   PSHADOW   pShadow;
   int       triggerLoc;
@@ -824,9 +824,9 @@ PDPYINFO pDpyInfo;
     white      = XWhitePixelOfScreen(fromScreen);
     fromHeight = XHeightOfScreen(fromScreen);
     fromWidth  = XWidthOfScreen(fromScreen);
-    root       = pDpyInfo->root      = XDefaultRootWindow(fromDpy); 
+    root       = pDpyInfo->root      = XDefaultRootWindow(fromDpy);
   }
-  toRoot     = XDefaultRootWindow(toDpy); 
+  toRoot     = XDefaultRootWindow(toDpy);
   nScreens   = pDpyInfo->nScreens  = XScreenCount(toDpy);
 #else
   fromScreen = XDefaultScreenOfDisplay(fromDpy);
@@ -834,10 +834,10 @@ PDPYINFO pDpyInfo;
   white      = XWhitePixelOfScreen(fromScreen);
   fromHeight = XHeightOfScreen(fromScreen);
   fromWidth  = XWidthOfScreen(fromScreen);
-  toRoot     = XDefaultRootWindow(toDpy); 
+  toRoot     = XDefaultRootWindow(toDpy);
 
   /* values also in dpyinfo */
-  root       = pDpyInfo->root      = XDefaultRootWindow(fromDpy); 
+  root       = pDpyInfo->root      = XDefaultRootWindow(fromDpy);
   nScreens   = pDpyInfo->nScreens  = XScreenCount(toDpy);
 #endif
 
@@ -864,7 +864,7 @@ PDPYINFO pDpyInfo;
 #endif
     nullPixmap = XCreatePixmap(fromDpy, root, 1, 1, 1);
     eventMask |= EnterWindowMask;
-    pDpyInfo->grabCursor = 
+    pDpyInfo->grabCursor =
       XCreatePixmapCursor(fromDpy, nullPixmap, nullPixmap,
 			  &dummyColor, &dummyColor, 0, 0);
 #ifdef WIN_2_X
@@ -895,7 +895,7 @@ PDPYINFO pDpyInfo;
       /* This code is based on Win2VBC/vncviewer ClientConnection.cpp */
       WNDCLASS wndclass;
       const DWORD winstyle = 0;
-  
+
       wndclass.style		= 0;
       wndclass.lpfnWndProc	= WinProcessMessage;
       wndclass.cbClsExtra	= 0;
@@ -908,10 +908,10 @@ PDPYINFO pDpyInfo;
       wndclass.hbrBackground	= (HBRUSH) GetStockObject(BLACK_BRUSH);
       wndclass.lpszMenuName	= (const TCHAR *) NULL;
       wndclass.lpszClassName	= fromWinName;
-  
+
       RegisterClass(&wndclass);
-  
-  
+
+
       pDpyInfo->bigwindow = CreateWindowEx(
 	 WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
 	 fromWinName,
@@ -940,8 +940,8 @@ PDPYINFO pDpyInfo;
 	 NULL,                // Menu handle
 	 m_instance,
 	 NULL);
-      
-  
+
+
       ShowWindow(pDpyInfo->bigwindow, SW_HIDE);
       ShowWindow(pDpyInfo->edgewindow, SW_HIDE);
       pDpyInfo->fromWidth = fromWidth;
@@ -972,9 +972,9 @@ PDPYINFO pDpyInfo;
     } else {
 #endif
     /* fromWidth - 1 doesn't seem to work for some reason */
-    trigger = pDpyInfo->trigger = 
+    trigger = pDpyInfo->trigger =
       XCreateWindow(fromDpy, root, triggerLoc, 0, triggerw, fromHeight,
-		    0, 0, InputOutput, 0, 
+		    0, 0, InputOutput, 0,
 		    CWBackPixel | CWOverrideRedirect, &xswa);
 #ifdef WIN_2_X
     }
@@ -989,10 +989,10 @@ PDPYINFO pDpyInfo;
     /* determine size of text */
     if (((font = XLoadQueryFont(fromDpy, fontName)) != NULL) ||
 	((font = XLoadQueryFont(fromDpy, defaultFN)) != NULL) ||
-	((font = XLoadQueryFont(fromDpy, "fixed")) != NULL)) { 
+	((font = XLoadQueryFont(fromDpy, "fixed")) != NULL)) {
       /* have a font */
       toDpyFormat[toDpyStringIndex] = (Format)toDpyName;
-      formatText(NULL, NULL, NULL, font, 
+      formatText(NULL, NULL, NULL, font,
 		 toDpyFormatLength, toDpyFormat, &twidth, &theight);
 
       textGC = pDpyInfo->textGC = XCreateGC(fromDpy, root, 0, NULL);
@@ -1015,7 +1015,7 @@ PDPYINFO pDpyInfo;
     default:                      gravity = NorthWestGravity; break;
     }
     if (gravMask) {
-      XGetGeometry(fromDpy, root, 
+      XGetGeometry(fromDpy, root,
 		   &rret, &xret, &yret, &wret, &hret, &bret, &dret);
       if ((geomMask & (XValue | XNegative)) == (XValue | XNegative)){
 	xoff = wret - width + xoff;
@@ -1024,9 +1024,9 @@ PDPYINFO pDpyInfo;
 	yoff = hret - height + yoff;
       }
     } /* END if geomMask */
-    
-    trigger = pDpyInfo->trigger = 
-      XCreateSimpleWindow(fromDpy, root, xoff, yoff, width, height, 
+
+    trigger = pDpyInfo->trigger =
+      XCreateSimpleWindow(fromDpy, root, xoff, yoff, width, height,
 			  0, black, white);
   } /* END if doEdge ... else ...*/
 
@@ -1053,10 +1053,10 @@ PDPYINFO pDpyInfo;
   pDpyInfo->wmpAtom = XInternAtom(fromDpy, "WM_PROTOCOLS", True);
   pDpyInfo->wmdwAtom = XInternAtom(fromDpy, "WM_DELETE_WINDOW", True);
   XSetWMProtocols(fromDpy, trigger, &(pDpyInfo->wmdwAtom), 1);
-  
+
   /* mdh - Put in Chaiken's change to make this InputOnly */
   if (doBig) {
-    big = pDpyInfo->big = 
+    big = pDpyInfo->big =
       XCreateWindow(fromDpy, root, 0, 0, fromWidth, fromHeight, 0,
 		    0, InputOnly, 0, CWOverrideRedirect, &xswa);
     /* size hints stuff: */
@@ -1091,9 +1091,9 @@ PDPYINFO pDpyInfo;
   widths  = (int *)malloc(sizeof(int *) * nScreens);
 
   for (screenNum = 0; screenNum < nScreens; ++screenNum) {
-    widths[screenNum] = toWidth  = 
+    widths[screenNum] = toWidth  =
       XWidthOfScreen(XScreenOfDisplay(toDpy, screenNum));
-    heights[screenNum] = toHeight = 
+    heights[screenNum] = toHeight =
       XHeightOfScreen(XScreenOfDisplay(toDpy, screenNum));
 
     pDpyInfo->xTables[screenNum] = xTable =
@@ -1188,7 +1188,7 @@ PDPYINFO pDpyInfo;
     toDpyFormat[toDpyLeftIndex] = MAX(0,((width - twidth) / 2));
     toDpyFormat[toDpyTopIndex]  = MAX(0,((height - theight) / 2));
 
-    formatText(fromDpy, trigger, &(textGC), font, 
+    formatText(fromDpy, trigger, &(textGC), font,
 	       toDpyFormatLength, toDpyFormat, NULL, NULL);
   } /* END if font */
 #ifdef WIN_2_X
@@ -1219,7 +1219,7 @@ PDPYINFO pDpyInfo;
 	       PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
 	       GrabModeAsync, GrabModeAsync,
 	       None, pDpyInfo->grabCursor, CurrentTime);
-  XGrabKeyboard(fromDpy, trigger, True, 
+  XGrabKeyboard(fromDpy, trigger, True,
 		GrabModeAsync, GrabModeAsync,
 		CurrentTime);
   XSelectInput(fromDpy, trigger, pDpyInfo->eventMask | PointerMotionMask);
@@ -1337,7 +1337,7 @@ PDPYINFO pDpyInfo;
     return ((*handler)(dpy, pDpyInfo, &ev));
   } else {
 #ifdef DEBUG
-    printf("no handler for window 0x%x, event type %d\n", 
+    printf("no handler for window 0x%x, event type %d\n",
 	   (unsigned int)pEv->window, pEv->type);
 #endif
   } /* END if/else */
@@ -1415,7 +1415,7 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
     } /* END if toX */
     if (!bAbortedDisconnect) {
       fromDpy = pDpyInfo->fromDpy;
-      XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0, 
+      XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0,
 		   fromX, pEv->y_root);
       XFlush(fromDpy);
     }
@@ -1427,7 +1427,7 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
 			 pDpyInfo->yTables[toScreenNum][pEv->y_root], 0);
     XFlush(pShadow->dpy);
   } /* END for */
-    
+
   return False;
 
 } /* END ProcessMotionNotify */
@@ -1439,11 +1439,11 @@ XExposeEvent *pEv;
 {
   XClearWindow(pDpyInfo->fromDpy, pDpyInfo->trigger);
   if (pDpyInfo->font)
-    formatText(pDpyInfo->fromDpy, pDpyInfo->trigger, 
-	       &(pDpyInfo->textGC), pDpyInfo->font, 
+    formatText(pDpyInfo->fromDpy, pDpyInfo->trigger,
+	       &(pDpyInfo->textGC), pDpyInfo->font,
 	       toDpyFormatLength, toDpyFormat, NULL, NULL);
   return False;
-  
+
 } /* END ProcessExpose */
 
 static Bool ProcessEnterNotify(dpy, pDpyInfo, pEv)
@@ -1457,7 +1457,7 @@ XCrossingEvent *pEv;
   if ((pEv->mode == NotifyNormal) &&
       (pDpyInfo->mode == X2X_DISCONNECTED) && (dpy == pDpyInfo->fromDpy)) {
     DoConnect(pDpyInfo);
-    XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0, 
+    XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0,
 		 pDpyInfo->fromXConn, pEv->y_root);
     xmev.x_root = pDpyInfo->lastFromX = pDpyInfo->fromXConn;
     xmev.y_root = pEv->y_root;
@@ -1465,7 +1465,7 @@ XCrossingEvent *pEv;
     ProcessMotionNotify(NULL, pDpyInfo, &xmev);
   }  /* END if NotifyNormal... */
   return False;
-  
+
 } /* END ProcessEnterNotify */
 
 static Bool ProcessButtonPress(dpy, pDpyInfo, pEv)
@@ -1510,7 +1510,7 @@ XButtonEvent *pEv;
     default:
 #ifdef DEBUG
       printf("unknown button %d\n", pEv->button);
-#endif	
+#endif
       break;
     } /* END switch button */
     if (state) { /* then more than one button pressed */
@@ -1534,7 +1534,7 @@ XButtonEvent *pEv;
   XMotionEvent xmev;
   unsigned int toButton;
 
-  if ((pDpyInfo->mode == X2X_CONNECTED) || 
+  if ((pDpyInfo->mode == X2X_CONNECTED) ||
       (pDpyInfo->mode == X2X_CONN_RELEASE)) {
     if (pEv->button <= N_BUTTONS) {
       toButton = pDpyInfo->inverseMap[pEv->button];
@@ -1551,7 +1551,7 @@ XButtonEvent *pEv;
   } /* END if */
 
   if (doEdge) return False;
-  if ((pDpyInfo->mode == X2X_AWAIT_RELEASE) || 
+  if ((pDpyInfo->mode == X2X_AWAIT_RELEASE) ||
       (pDpyInfo->mode == X2X_CONN_RELEASE)) {
     /* make sure that all buttons are released */
     state = pEv->state;
@@ -1564,7 +1564,7 @@ XButtonEvent *pEv;
     default:
 #ifdef DEBUG
       printf("unknown button %d\n", pEv->button);
-#endif	
+#endif
       break;
     } /* END switch button */
     if (!state) { /* all buttons up: time to (dis)connect */
@@ -1645,7 +1645,7 @@ XKeyEvent *pEv;
 
   return False;
 
-} /* END ProcessKeyEvent */ 
+} /* END ProcessKeyEvent */
 
 static Bool ProcessConfigureNotify(dpy, pDpyInfo, pEv)
 Display  *dpy;
@@ -1654,9 +1654,9 @@ XConfigureEvent *pEv;
 {
   if (pDpyInfo->font) {
     /* reposition text */
-    toDpyFormat[toDpyLeftIndex] = 
+    toDpyFormat[toDpyLeftIndex] =
       MAX(0,((pEv->width - pDpyInfo->twidth) / 2));
-    toDpyFormat[toDpyTopIndex]  = 
+    toDpyFormat[toDpyTopIndex]  =
       MAX(0,((pEv->height - pDpyInfo->theight) / 2));
   } /* END if font */
   return False;
@@ -1686,10 +1686,10 @@ XSelectionRequestEvent *pEv;
     printf("selection request\n");
 #endif
 
-  /* bribe me to support more general selection requests, 
+  /* bribe me to support more general selection requests,
      or send me the code to do it. */
   if ((pDpyXtra->sState != SELSTATE_ON) ||
-      (pEv->selection != XA_PRIMARY) || 
+      (pEv->selection != XA_PRIMARY) ||
       (pEv->target > XA_LAST_PREDEFINED)) { /* bad request, punt request */
     pEv->property = None;
     SendSelectionNotify(pEv); /* blam! */
@@ -1736,7 +1736,7 @@ XPropertyEvent *pEv;
       pDpyXtra->sState = SELSTATE_ON;
       XSetSelectionOwner(dpy, XA_PRIMARY, pDpyXtra->propWin, pEv->time);
     } else if (dpy == pDpyInfo->sDpy) {
-      if (pDpyInfo->sTime == pEv->time) { 
+      if (pDpyInfo->sTime == pEv->time) {
 	/* oops, need to ensure uniqueness */
 	SendPing(dpy, pDpyXtra); /* try for another time stamp */
       } else {
@@ -1771,23 +1771,23 @@ XSelectionEvent *pEv;
   if ((dpy == pDpyInfo->sDpy) && (pDpyInfo->sTime == pEv->time)) {
     success = False;
     /* corresponding select */
-    if (XGetWindowProperty(dpy, pEv->requestor, XA_PRIMARY, 0L, 
+    if (XGetWindowProperty(dpy, pEv->requestor, XA_PRIMARY, 0L,
 			   DEFAULT_PROP_SIZE, True, AnyPropertyType,
 			   &type, &format, &nitems, &after, &prop)
 	== Success) { /* got property */
-      if ((type != None) && (format != None) && (nitems != 0) && 
+      if ((type != None) && (format != None) && (nitems != 0) &&
 	  (prop != None) && (type <= XA_LAST_PREDEFINED)) { /* known type */
 	if (after == 0L) { /* got everything */
 	  success = True;
 	} else { /* try to get everything */
 	  XFree(prop);
-	  success = 
+	  success =
 	    ((XGetWindowProperty(dpy, pEv->requestor, XA_PRIMARY, 0L,
 				 DEFAULT_PROP_SIZE + after + 1,
 				 True, AnyPropertyType,
 				 &type, &format, &nitems, &after, &prop)
-	      == Success) && 
-	     (type != None) && (format != None) && (nitems != 0) && 
+	      == Success) &&
+	     (type != None) && (format != None) && (nitems != 0) &&
 	     (after == 0L) && (prop != None));
 	} /* END if got everything ... else ...*/
       } /* END if known type */
@@ -1822,9 +1822,9 @@ XSelectionRequestEvent *pSelReq;
   sendEv.target    = pSelReq->target;
   sendEv.property  = pSelReq->property;
   sendEv.time      = pSelReq->time;
-  XSendEvent(pSelReq->display, pSelReq->requestor, False, 0, 
+  XSendEvent(pSelReq->display, pSelReq->requestor, False, 0,
 	     (XEvent *)&sendEv);
-  
+
 } /* END SendSelectionNotify */
 
 static Bool ProcessSelectionClear(dpy, pDpyInfo, pEv)
@@ -1896,7 +1896,7 @@ XMappingEvent       *pEv;
     RefreshPointerMapping(dpy, pDpyInfo);
     break;
   } /* END switch */
-  
+
   return False;
 
 } /* END ProcessMapping */
@@ -1911,7 +1911,7 @@ Bool bDown;
 
   /* find the associated button, or the last record, whichever comes first */
   for (ppFake = &(pDpyInfo->pFakeThings);
-       (*ppFake && 
+       (*ppFake &&
 	(((*ppFake)->type != type) || ((*ppFake)->thing != thing)));
        ppFake = &((*ppFake)->pNext));
 
@@ -2038,7 +2038,7 @@ void MoveWindowToEdge(PDPYINFO pDpyInfo) {
 int MoveWindowToScreen(PDPYINFO pDpyInfo)
 {
   int notfg;
-  LPINPUT pInputs; 
+  LPINPUT pInputs;
 
   if(!pDpyInfo->onedge) return 1;
 #ifdef DEBUG
@@ -2086,7 +2086,7 @@ int MoveWindowToScreen(PDPYINFO pDpyInfo)
       return 0;
     }
     free(pInputs);
-    return 1; 
+    return 1;
   }
   SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
 	       0, 0,
@@ -2140,7 +2140,7 @@ int x,y;
 #ifdef DEBUG
     printf("Ask X for -to selection\n");
 #endif
-    XConvertSelection(pDpyInfo->toDpy, XA_PRIMARY, XA_STRING, 
+    XConvertSelection(pDpyInfo->toDpy, XA_PRIMARY, XA_STRING,
 		      XA_PRIMARY, pDpyInfo->toDpyXtra.propWin, CurrentTime);
     XFlush(pDpyInfo->toDpy);
     pDpyInfo->expectSelNotify = 1;
@@ -2233,7 +2233,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	  SetFocus(pDpyInfo->bigwindow);
 	}
 #ifdef DEBUG
-	else 
+	else
 	  printf("No focus, not on edge, not bigwindow\n");
 #endif
       }
@@ -2249,7 +2249,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       if(y<0 || y>32768) y=0;
       if(x>=pDpyInfo->fromWidth) x = pDpyInfo->fromWidth - 1;
       if(y>=pDpyInfo->fromHeight) y = pDpyInfo->fromHeight - 1;
-	  
+
       if(pDpyInfo->onedge)
       {
 	if(hwnd == pDpyInfo->edgewindow)
@@ -2267,7 +2267,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
       }
-	  
+
       if(hwnd == pDpyInfo->bigwindow)
       {
 	WinPointerEvent(pDpyInfo, x,y, wParam, iMsg);
@@ -2284,7 +2284,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	if (delta > pDpyInfo->unreasonableDelta) {
 	  /* Guess that the warp failed and try it again... */
 #ifdef DEBUG
-	  printf("Retry warp to (%d, %d)\n", 
+	  printf("Retry warp to (%d, %d)\n",
 		 (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
 		 y);
 #endif
@@ -2354,13 +2354,13 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       WinKeyEvent(pDpyInfo, (int) wParam, (DWORD) lParam);
       return 0;
     }
-	
+
     case WM_CHAR:
     case WM_SYSCHAR:
     case WM_DEADCHAR:
     case WM_SYSDEADCHAR:
       return 0;
-      
+
       // Cacnel modifiers when we lose focus
     case WM_KILLFOCUS:
     {
@@ -2383,26 +2383,26 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       DestroyWindow(hwnd);
       return 0;
     }
-    
+
     case WM_DESTROY:
     {
 
       // Remove us from the clipboard viewer chain
       if (doSel) {
-	/*int res =*/ ChangeClipboardChain(pDpyInfo->edgewindow, 
+	/*int res =*/ ChangeClipboardChain(pDpyInfo->edgewindow,
 				       pDpyInfo->hwndNextViewer);
       }
 
       SetWindowLong(pDpyInfo->bigwindow, GWL_USERDATA, (LONG) 0);
       SetWindowLong(pDpyInfo->edgewindow, GWL_USERDATA, (LONG) 0);
-      
+
       if(hwnd == pDpyInfo->bigwindow) pDpyInfo->bigwindow = 0;
       if(hwnd == pDpyInfo->edgewindow) pDpyInfo->edgewindow = 0;
       /* XXX mdh - is a PostQuitMessage(0) needed here? */
       return 0;
     }
-    
-    
+
+
     case WM_SETCURSOR:
     {
       POINT pt;
@@ -2416,12 +2416,12 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       }
       return DefWindowProc(hwnd, iMsg, wParam, lParam);
     }
-    
+
     case WM_DRAWCLIPBOARD:
       if (doSel) {
 	// The clipboard contents changed
 	/* For now can only process text */
-	if (IsClipboardFormatAvailable(CF_TEXT) && 
+	if (IsClipboardFormatAvailable(CF_TEXT) &&
 	    OpenClipboard(pDpyInfo->edgewindow)) {
 	  HGLOBAL hglb = GetClipboardData(CF_TEXT);
 	  LPTSTR lptstr = GlobalLock(hglb);
@@ -2431,7 +2431,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	  if (len > 0) {
 	    if (pDpyInfo->winSelText != NULL) free(pDpyInfo->winSelText);
 	    pDpyInfo->winSelText = malloc(len + 10);
-	    if (pDpyInfo->winSelText != NULL) 
+	    if (pDpyInfo->winSelText != NULL)
 	      strcpy(pDpyInfo->winSelText, lptstr);
 #ifdef DEBUG
 	    /* XXX mdh - hope this does (null) as expected! */
@@ -2462,10 +2462,10 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	    /* but we will claim selection in the init routine */
 	    if (pDpyInfo->toDpyXtra.propWin != 0) {
 #ifdef DEBUG
-	      printf("Selection Owner to %x\n", 
+	      printf("Selection Owner to %x\n",
 		     (unsigned int)pDpyInfo->toDpyXtra.propWin);
 #endif
-	      XSetSelectionOwner(pDpyInfo->toDpy, XA_PRIMARY, 
+	      XSetSelectionOwner(pDpyInfo->toDpy, XA_PRIMARY,
 				 pDpyInfo->toDpyXtra.propWin, CurrentTime);
 	      pDpyInfo->owntoXsel = 1;
 	    }
@@ -2479,25 +2479,25 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       // ProcessLocalClipboardChange();
 
       return 0;
-      
+
     case WM_CHANGECBCHAIN:
     {
       if (doSel) {
 	// The clipboard chain is changing
-	HWND hWndRemove = (HWND) wParam;     // handle of window being removed 
-	HWND hWndNext = (HWND) lParam;       // handle of next window in chain 
+	HWND hWndRemove = (HWND) wParam;     // handle of window being removed
+	HWND hWndNext = (HWND) lParam;       // handle of next window in chain
 	// If next window is closing, update our pointer.
-	if (hWndRemove == pDpyInfo->hwndNextViewer)  
-	  pDpyInfo->hwndNextViewer = hWndNext;  
-	// Otherwise, pass the message to the next link.  
-	else if (pDpyInfo->hwndNextViewer != NULL) 
-	  SendMessage(pDpyInfo->hwndNextViewer, WM_CHANGECBCHAIN, 
+	if (hWndRemove == pDpyInfo->hwndNextViewer)
+	  pDpyInfo->hwndNextViewer = hWndNext;
+	// Otherwise, pass the message to the next link.
+	else if (pDpyInfo->hwndNextViewer != NULL)
+	  SendMessage(pDpyInfo->hwndNextViewer, WM_CHANGECBCHAIN,
 		      (WPARAM) hWndRemove,  (LPARAM) hWndNext );
       } else {
 	printf("Unxepected WM_CHANGEKBCHAIN when not doing selection\n");
       }
       return 0;
-      
+
     }
 
     case WM_SYSCOMMAND:
@@ -2511,7 +2511,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	  XActivateScreenSaver(pShadow->dpy);
 	  XFlush(pShadow->dpy);
 	} /* END for shadow */
-      }	
+      }
       /* Fall through */
     case WM_SYNCPAINT:
     case WM_PAINT:
@@ -2546,8 +2546,8 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
   return DefWindowProc(hwnd, iMsg, wParam, lParam);
 }
 
-void WinPointerEvent(PDPYINFO pDpyInfo, 
-		     int x, int y, DWORD keyflags, UINT msg) 
+void WinPointerEvent(PDPYINFO pDpyInfo,
+		     int x, int y, DWORD keyflags, UINT msg)
 {
   int down = 0;
   unsigned int button, toButton;
@@ -2581,7 +2581,7 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
     if (delta > pDpyInfo->unreasonableDelta) {
       if (pDpyInfo->unreasonableCount++ < MAX_UNREASONABLES) {
 #ifdef DEBUG
-	printf("Unreasonable x delta last = %d this = %d\n", 
+	printf("Unreasonable x delta last = %d this = %d\n",
 	       pDpyInfo->lastFromX, fromX);
 #endif
 	return;
@@ -2601,7 +2601,7 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 	} else { /* disconnect! */
 #ifdef DEBUG
 	  printf("INCR screen %d: ", toScreenNum);
-#endif 
+#endif
 	  if (doBtnBlock &&
 	      (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
 #ifdef DEBUG
@@ -2622,11 +2622,11 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 	} else { /* disconnect! */
 #ifdef DEBUG
 	  printf("DECR screen %d: ", toScreenNum);
-#endif 
+#endif
 	  if (doBtnBlock &&
 	      (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
 #ifdef DEBUG
-	    printf("Disconnect aborted by button state 0x%x\n", 
+	    printf("Disconnect aborted by button state 0x%x\n",
 		   (unsigned int)keyflags);
 #endif
 	  } else {
@@ -2662,7 +2662,7 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
       for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
 	XTestFakeButtonEvent(pShadow->dpy, toButton, down, 0);
 #ifdef DEBUG
-	printf("from button %d %s, to button %d %s\n", 
+	printf("from button %d %s, to button %d %s\n",
 	       button, down ? "down":"up", toButton, down ? "down":"up");
 #endif
 	XFlush(pShadow->dpy);
@@ -2689,7 +2689,7 @@ void SendButtonClick(pDpyInfo, button)
 	XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
 	XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
 #ifdef DEBUG
-	printf("Click from button %d, to button %d\n", 
+	printf("Click from button %d, to button %d\n",
 	       button, toButton);
 #endif
 	XFlush(pShadow->dpy);
@@ -2720,10 +2720,10 @@ void SendButtonClick(pDpyInfo, button)
 //    a German user types this combination, he doesn't mean Ctrl-@.
 //    So for this we will send, in total:
 //
-//      Ctrl-Down, Alt-Down,   
+//      Ctrl-Down, Alt-Down,
 //                 (when we get the AltGr pressed)
 //
-//      Alt-Up, Ctrl-Up, @-Down, Ctrl-Down, Alt-Down 
+//      Alt-Up, Ctrl-Up, @-Down, Ctrl-Down, Alt-Down
 //                 (when we discover that this is @ being pressed)
 //
 //      Alt-Up, Ctrl-Up, @-Up, Ctrl-Down, Alt-Down
@@ -2784,13 +2784,13 @@ DWORD keyData;
       SendKeyEvent(pDpyInfo, XK_Alt_R, False, False, 0);
       if (virtkey == VK_END)
 	exit(0); // Is there a proper way?
-      
+
       DoWinDisconnect(pDpyInfo, -1, -1);
       return;
     }
-  }	
+  }
 
-  kas = PCtoX(virtkey, keyData);    
+  kas = PCtoX(virtkey, keyData);
 
   if (kas.releaseModifiers & KEYMAP_LCONTROL) {
     SendKeyEvent(pDpyInfo, XK_Control_L, False, False, 0);
@@ -2832,7 +2832,7 @@ DWORD keyData;
   for (i = 0; kas.keycodes[i] != XK_VoidSymbol && i < MaxKeysPerKey; i++) {
     SendKeyEvent(pDpyInfo, kas.keycodes[i], down, doCapsLkHack, winShift);
 #ifdef DEBUG
-      printf("Sent keysym %04x (%s)\n", 
+      printf("Sent keysym %04x (%s)\n",
 	     (int)kas.keycodes[i], down ? "press" : "release");
 #endif
   }
@@ -2873,7 +2873,7 @@ DWORD keyData;
 /* Note implementation of capsLockHack is different from X version */
 /* This version should also catch the case of keys that are shifted on from */
 /* but unshifted on to. Eg '<' above comma on from, going to '>' above '<' */
-void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down, 
+void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down,
 		  int chkShift, int winShift)
 {
   KeyCode keycode;
@@ -2961,7 +2961,7 @@ void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down,
       }
       else
 	XTestFakeKeyEvent(pShadow->dpy, keycode, down, 0);
-      
+
       XFlush(pShadow->dpy);
     } /* END if */
   } /* END for */
@@ -3002,7 +3002,7 @@ XSelectionRequestEvent *pEv;
 
   /* only do strings to PRIMARY */
   if ((pDpyInfo->winSelText == NULL) ||
-      (pEv->selection != XA_PRIMARY) || 
+      (pEv->selection != XA_PRIMARY) ||
       (pEv->target != XA_STRING)) { /* bad request, punt request */
     pEv->property = None;
     SendSelectionNotify(pEv); /* blam! */
@@ -3037,28 +3037,28 @@ XSelectionEvent *pEv;
   if (pEv->property != None) {
     /* Grab the property */
     success = False;
-    if (XGetWindowProperty(dpy, pEv->requestor, XA_PRIMARY, 0L, 
+    if (XGetWindowProperty(dpy, pEv->requestor, XA_PRIMARY, 0L,
 			   DEFAULT_PROP_SIZE, True, AnyPropertyType,
 			   &type, &format, &nitems, &after, &prop)
 	== Success) { /* got property */
       /* Check there is a string */
       /* XXX mdh -- emacs seems to give me type 233 but its useable */
-      if ((type != None) && 
-	  ((type == XA_STRING) || !doClipCheck) && 
-	  (format != None) && (nitems != 0) && 
+      if ((type != None) &&
+	  ((type == XA_STRING) || !doClipCheck) &&
+	  (format != None) && (nitems != 0) &&
 	  (prop != None)) { /* known type */
 	if (after == 0L) { /* got everything */
 	  success = True;
 	} else { /* try to get everything */
 	  XFree(prop);
 	  /* The trick here is to find the whole size from what it told us */
-	  success = 
+	  success =
 	    ((XGetWindowProperty(dpy, pEv->requestor, XA_PRIMARY, 0L,
 				 DEFAULT_PROP_SIZE + after + 1,
 				 True, AnyPropertyType,
 				 &type, &format, &nitems, &after, &prop)
-	      == Success) && 
-	     (type != None) && (format != None) && (nitems != 0) && 
+	      == Success) &&
+	     (type != None) && (format != None) && (nitems != 0) &&
 	     (after == 0L) && (prop != None));
 	} /* END if got everything ... else ...*/
       } /* END if known type */
@@ -3079,19 +3079,19 @@ XSelectionEvent *pEv;
       if (OpenClipboard(pDpyInfo->edgewindow)) {
 	HGLOBAL hglbCopy;
 	EmptyClipboard();
-	hglbCopy = GlobalAlloc(GMEM_MOVEABLE, 
-			       (strlen(prop) + 1) * sizeof(char)); 
-        if (hglbCopy != NULL) 
-        { 
-	  // Lock the handle and copy the text to the buffer. 
-	  LPTSTR lptstrCopy = GlobalLock(hglbCopy); 
+	hglbCopy = GlobalAlloc(GMEM_MOVEABLE,
+			       (strlen(prop) + 1) * sizeof(char));
+        if (hglbCopy != NULL)
+        {
+	  // Lock the handle and copy the text to the buffer.
+	  LPTSTR lptstrCopy = GlobalLock(hglbCopy);
 	  strcpy(lptstrCopy, prop);
-	  GlobalUnlock(hglbCopy); 
-	  // Place the handle on the clipboard. 
-	  SetClipboardData(CF_TEXT, hglbCopy); 
+	  GlobalUnlock(hglbCopy);
+	  // Place the handle on the clipboard.
+	  SetClipboardData(CF_TEXT, hglbCopy);
 	  pDpyInfo->expectOwnClip = strlen(prop) + 1;
-        } 
-	CloseClipboard(); 
+        }
+	CloseClipboard();
       } /* END if open ok */
       XFree(prop);
     }
