@@ -188,6 +188,12 @@ is slightly less ugly).
 Disable the -capslockhack behaviour. Used to change the default
 behaviour after the -fromwin option is specified. 
 .TP
+.B \-clipcheck
+.IP 
+Check that clipboard entries are regular strings (XA_STRING) before
+forwarding to Windows. Enabling this is safer but may prevent copying
+with certain setups (eg from emacs under KDE/XFree).
+.TP
 .B \-shadow \fIdisplay\fP
 .IP 
 Also sends mouse movements and keystrokes to this display.  Useful

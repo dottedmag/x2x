@@ -324,6 +324,7 @@ static Bool    doPointerMap = True;
 static PSTICKY stickies     = NULL;
 static Bool    doBtnBlock   = False;
 static Bool    doCapsLkHack = False;
+static Bool    doClipCheck = False;
 
 #ifdef WIN_2_X
 /* These are used to allow pointer comparisons */
@@ -580,6 +581,11 @@ char **argv;
 #ifdef DEBUG
       printf("behavior of CapsLock will be hacked\n");
 #endif
+    } else if (!strcasecmp(argv[arg], "-clipcheck")) {
+      doClipCheck = True;
+#ifdef DEBUG
+      printf("Clipboard type will be checked for XA_STRING\n");
+#endif
     } else if (!strcasecmp(argv[arg], "-nocapslockhack")) {
       doCapsLkHack = False;
 #ifdef DEBUG
@@ -645,6 +651,7 @@ static void Usage()
   printf("       -resurface\n");
   printf("       -capslockhack\n");
   printf("       -nocapslockhack\n");
+  printf("       -clipcheck\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
 #ifdef WIN_2_X
@@ -3035,8 +3042,11 @@ XSelectionEvent *pEv;
 			   &type, &format, &nitems, &after, &prop)
 	== Success) { /* got property */
       /* Check there is a string */
-      if ((type == XA_STRING) && (format != None) && (nitems != 0) && 
-	  (prop != None) && (type <= XA_LAST_PREDEFINED)) { /* known type */
+      /* XXX mdh -- emacs seems to give me type 233 but its useable */
+      if ((type != None) && 
+	  ((type == XA_STRING) || !doClipCheck) && 
+	  (format != None) && (nitems != 0) && 
+	  (prop != None)) { /* known type */
 	if (after == 0L) { /* got everything */
 	  success = True;
 	} else { /* try to get everything */
@@ -3052,7 +3062,15 @@ XSelectionEvent *pEv;
 	     (after == 0L) && (prop != None));
 	} /* END if got everything ... else ...*/
       } /* END if known type */
+#ifdef DEBUG
+      else printf("Bad prop: type %d, format %d, nitems %d, prop %d(%s)\n",
+		  (int)type, format, (int)nitems, (int)prop,
+		  (prop == None) ? "none": (char *)prop);
+#endif
     } /* END if got property */
+#ifdef DEBUG
+      else printf("Did not get property\n");
+#endif
 
     if (success) { /* send bits to the Windows Clipboard */
 #ifdef DEBUG
