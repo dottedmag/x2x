@@ -1,3 +1,21 @@
+x2x (1.27-5) unstable; urgency=low
+
+  * Fix boundary adjustment for vertical mode (-north and -south).
+    This should make it possible to move the pointer back from the 'to'
+    screen to the 'from' screen in -north or -south mode.
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Sun,  4 Oct 1998 21:58:06 +0100
+
+x2x (1.27-4) unstable; urgency=low
+
+  * Added options -north and -south.
+  * Don't "Suggest: propsel" any more, just mention it in the extended
+    description.
+  * Updated standards-version to 2.4.1 (no changes necessary).
+  * Update debian/rules.
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Sat,  3 Oct 1998 18:11:28 +0100
+
 x2x (1.27-3) unstable; urgency=low
 
   * Remove dpkg-geninfo from debian directory and remove call to it

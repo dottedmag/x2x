@@ -1,7 +1,7 @@
 /*
- * x2x: Uses the XTEST extension to forward keystrokes from a window on
- *      one display to another display.  Useful for desks
- *      with multiple keyboards.
+ * x2x: Uses the XTEST extension to forward mouse movements and keystrokes
+ *      from a window on one display to another display.  Useful for
+ *      desks with multiple keyboards.
  *
  * Copyright (c) 1997
  * Digital Equipment Corporation.  All rights reserved.
@@ -37,6 +37,12 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+/*
+ * Modified on 3 Oct 1998 by Charles Briscoe-Smith:
+ *   added options -north and -south
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,8 +61,10 @@
  * definitions for edge
  **********/
 #define EDGE_NONE   0 /* don't transfer between edges of screens */
-#define EDGE_EAST   1 /* from display is on the east side of to display */
-#define EDGE_WEST   2 /* from display is on the west side of to display */
+#define EDGE_NORTH  1 /* from display is on the north side of to display */
+#define EDGE_SOUTH  2 /* from display is on the south side of to display */
+#define EDGE_EAST   3 /* from display is on the east side of to display */
+#define EDGE_WEST   4 /* from display is on the west side of to display */
 
 /**********
  * functions
@@ -163,7 +171,8 @@ typedef struct {
   Cursor  grabCursor;
   XFS     *font;
   int     twidth, theight;
-  int     lastFromX;
+  Bool    vertical;
+  int     lastFromCoord;
   int     unreasonableDelta;
   
   /* stuff on "to" display */
@@ -180,8 +189,10 @@ typedef struct {
   int     nScreens;
   short   **xTables; /* precalculated conversion tables */
   short   **yTables;
-  int     fromXConn, fromXDisc; /* location of cursor after conn/disc ops */
-  int     fromXIncr, fromXDecr; /* location of cursor after incr/decr ops */
+  int     fromConnCoord; /* location of cursor after conn/disc ops */
+  int     fromDiscCoord;
+  int     fromIncrCoord; /* location of cursor after incr/decr ops */
+  int     fromDecrCoord;
 
   /* selection forwarding info */
   DPYXTRA fromDpyXtra;
@@ -253,7 +264,7 @@ char **argv;
     exit(1);
   }
 
-  /* no OS independent wat to stop Xlib from complaining via stderr,
+  /* no OS independent way to stop Xlib from complaining via stderr,
      but can always pipe stdout/stderr to /dev/null */
   /* convert to real name: */
   while ((fromDpy = XOpenDisplay(fromDpyName)) == NULL) {
@@ -384,6 +395,16 @@ char **argv;
 #ifdef DEBUG
       printf("will not do pointer mapping\n");
 #endif
+    } else if (!strcasecmp(argv[arg], "-north")) {
+      doEdge = EDGE_NORTH;
+#ifdef DEBUG
+      printf("\"from\" is on the north side of \"to\"\n");
+#endif
+    } else if (!strcasecmp(argv[arg], "-south")) {
+      doEdge = EDGE_SOUTH;
+#ifdef DEBUG
+      printf("\"from\" is on the south side of \"to\"\n");
+#endif
     } else if (!strcasecmp(argv[arg], "-east")) {
       doEdge = EDGE_EAST;
 #ifdef DEBUG
@@ -458,6 +479,8 @@ static void Usage()
   printf("       -big\n");
   printf("       -buttonblock\n");
   printf("       -nomouse\n");
+  printf("       -north\n");
+  printf("       -south\n");
   printf("       -east\n");
   printf("       -west\n");
   printf("       -nosel\n");
@@ -559,6 +582,7 @@ PDPYINFO pDpyInfo;
   XFS       *font;
   PSHADOW   pShadow;
   int       triggerLoc;
+  Bool      vertical;
 
   /* cache commonly used variables */
   fromDpy = pDpyInfo->fromDpy;
@@ -574,10 +598,12 @@ PDPYINFO pDpyInfo;
   /* values also in dpyinfo */
   root       = pDpyInfo->root      = XDefaultRootWindow(fromDpy); 
   nScreens   = pDpyInfo->nScreens  = XScreenCount(toDpy);
+  vertical   = pDpyInfo->vertical  = (doEdge == EDGE_NORTH
+                                      || doEdge == EDGE_SOUTH);
 
   /* other dpyinfo values */
   pDpyInfo->mode        = X2X_DISCONNECTED;
-  pDpyInfo->unreasonableDelta = fromWidth / 2;
+  pDpyInfo->unreasonableDelta = (vertical ? fromHeight : fromWidth) / 2;
   pDpyInfo->pFakeThings = NULL;
 
   /* window init structures */
@@ -586,33 +612,41 @@ PDPYINFO pDpyInfo;
   eventMask = KeyPressMask | KeyReleaseMask;
 
   /* cursor locations for moving between screens */
-  pDpyInfo->fromXIncr = triggerw;
-  pDpyInfo->fromXDecr = fromWidth - triggerw - 1;
+  pDpyInfo->fromIncrCoord = triggerw;
+  pDpyInfo->fromDecrCoord = (vertical ? fromHeight : fromWidth) - triggerw - 1;
   if (doEdge) { /* edge triggers x2x */
     nullPixmap = XCreatePixmap(fromDpy, root, 1, 1, 1);
     eventMask |= EnterWindowMask;
     pDpyInfo->grabCursor = 
       XCreatePixmapCursor(fromDpy, nullPixmap, nullPixmap,
 			  &dummyColor, &dummyColor, 0, 0);
-    if (doEdge == EDGE_EAST) {
-      /* trigger window location */
-      triggerLoc = fromWidth - triggerw;
-      toHeight = XHeightOfScreen(XScreenOfDisplay(toDpy, 0));
-      pDpyInfo->fromXConn = 1;
-      pDpyInfo->fromXDisc = fromWidth - triggerw - 1;
-    } else {
-      /* trigger window location */
+    /* trigger window location */
+    if (doEdge == EDGE_NORTH) {
       triggerLoc = 0;
-      toHeight = XHeightOfScreen(XScreenOfDisplay(toDpy, nScreens - 1));
-      toWidth  = XWidthOfScreen(XScreenOfDisplay(toDpy, nScreens - 1));
-      pDpyInfo->fromXConn = fromWidth - triggerw - 1;
-      pDpyInfo->fromXDisc = triggerw;
+      pDpyInfo->fromConnCoord = fromHeight - triggerw - 1;
+      pDpyInfo->fromDiscCoord = triggerw;
+    } else if (doEdge == EDGE_SOUTH) {
+      triggerLoc = fromHeight - triggerw;
+      pDpyInfo->fromConnCoord = 1;
+      pDpyInfo->fromDiscCoord = triggerLoc - 1;
+    } else if (doEdge == EDGE_EAST) {
+      triggerLoc = fromWidth - triggerw;
+      pDpyInfo->fromConnCoord = 1;
+      pDpyInfo->fromDiscCoord = triggerLoc - 1;
+    } else /* doEdge == EDGE_WEST */ {
+      triggerLoc = 0;
+      pDpyInfo->fromConnCoord = fromWidth - triggerw - 1;
+      pDpyInfo->fromDiscCoord = triggerw;
     } /* END if doEdge == ... */
 
     xswa.background_pixel = black;
     /* fromWidth - 1 doesn't seem to work for some reason */
     trigger = pDpyInfo->trigger = 
-      XCreateWindow(fromDpy, root, triggerLoc, 0, triggerw, fromHeight,
+      XCreateWindow(fromDpy, root,
+		    vertical ? 0 : triggerLoc,
+		    vertical ? triggerLoc : 0,
+		    vertical ? fromWidth : triggerw,
+		    vertical ? triggerw : fromHeight,
 		    0, 0, InputOutput, 0, 
 		    CWBackPixel | CWOverrideRedirect, &xswa);
     font = NULL;
@@ -711,7 +745,8 @@ PDPYINFO pDpyInfo;
   free(windowName);
 
   /* conversion stuff */
-  pDpyInfo->toScreen = (doEdge == EDGE_WEST) ? (nScreens - 1) : 0;
+  pDpyInfo->toScreen = (doEdge == EDGE_WEST || doEdge == EDGE_NORTH)
+			? (nScreens - 1) : 0;
 
   /* construct table lookup for screen coordinate conversion */
   pDpyInfo->xTables = (short **)malloc(sizeof(short *) * nScreens);
@@ -739,13 +774,25 @@ PDPYINFO pDpyInfo;
       xTable[counter] = (counter * toWidth) / fromWidth;
 
     /* adjustment for boundaries */
-    if ((screenNum != 0) || (doEdge == EDGE_EAST))
-      xTable[0] = COORD_DECR;
-    if (((screenNum + 1) < nScreens) || (doEdge == EDGE_WEST)) {
-      xTable[fromWidth - 1] = COORD_INCR;
-      /* work-around for bug: on at least one tested screen, cursor
-	 never moved past fromWidth - 2 */
-      xTable[fromWidth - 2] = COORD_INCR;
+    if (vertical) {
+      if ((screenNum != 0) || (doEdge == EDGE_SOUTH))
+        yTable[0] = COORD_DECR;
+      if (((screenNum + 1) < nScreens) || (doEdge == EDGE_NORTH)) {
+        yTable[fromHeight - 1] = COORD_INCR;
+	/* work-around for bug: on at least one tested screen, cursor
+	   never moved past fromWidth - 2  (I'll assume this might apply
+	   in the vertical case, too. --cpbs) */
+        yTable[fromHeight - 2] = COORD_INCR;
+      }
+    } else {
+      if ((screenNum != 0) || (doEdge == EDGE_EAST))
+        xTable[0] = COORD_DECR;
+      if (((screenNum + 1) < nScreens) || (doEdge == EDGE_WEST)) {
+        xTable[fromWidth - 1] = COORD_INCR;
+        /* work-around for bug: on at least one tested screen, cursor
+	   never moved past fromWidth - 2 */
+        xTable[fromWidth - 2] = COORD_INCR;
+      }
     }
 
   } /* END for screenNum */
@@ -937,33 +984,36 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
 
   int       toScreenNum;
   PSHADOW   pShadow;
-  int       toX, fromX, delta;
+  int       toCoord, fromCoord, delta;
   Display   *fromDpy;
   Bool      bAbortedDisconnect;
+  Bool      vert;
+
+  vert = pDpyInfo->vertical;
 
   /* find the screen */
   toScreenNum = pDpyInfo->toScreen;
-  fromX = pEv->x_root;
+  fromCoord = vert ? pEv->y_root : pEv->x_root;
 
   /* check to make sure the cursor is still on the from screen */
   if (!(pEv->same_screen)) {
-    toX = (pDpyInfo->lastFromX < fromX) ? COORD_DECR : COORD_INCR;
+    toCoord = (pDpyInfo->lastFromCoord < fromCoord) ? COORD_DECR : COORD_INCR;
   } else {
-    toX = pDpyInfo->xTables[toScreenNum][fromX];
+    toCoord = (vert?pDpyInfo->yTables:pDpyInfo->xTables)[toScreenNum][fromCoord];
 
     /* sanity check motion: necessary for nondeterminism surrounding warps */
-    delta = pDpyInfo->lastFromX - fromX;
+    delta = pDpyInfo->lastFromCoord - fromCoord;
     if (delta < 0) delta = -delta;
     if (delta > pDpyInfo->unreasonableDelta) return False;
   }
 
-  if (SPECIAL_COORD(toX) != 0) { /* special coordinate */
+  if (SPECIAL_COORD(toCoord) != 0) { /* special coordinate */
     bAbortedDisconnect = False;
-    if (toX == COORD_INCR) {
+    if (toCoord == COORD_INCR) {
       if (toScreenNum != (pDpyInfo->nScreens - 1)) { /* next screen */
 	toScreenNum = ++(pDpyInfo->toScreen);
-	fromX = pDpyInfo->fromXIncr;
-	toX = pDpyInfo->xTables[toScreenNum][fromX];
+	fromCoord = pDpyInfo->fromIncrCoord;
+	toCoord = (vert?pDpyInfo->yTables:pDpyInfo->xTables)[toScreenNum][fromCoord];
       } else { /* disconnect! */
 	if (doBtnBlock &&
 	    (pEv->state & (Button1Mask | Button2Mask | Button3Mask |
@@ -971,15 +1021,15 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
 	  bAbortedDisconnect = True;
 	else {
 	  DoDisconnect(pDpyInfo);
-	  fromX = pDpyInfo->fromXDisc;
+	  fromCoord = pDpyInfo->fromDiscCoord;
 	}
-	toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
+	toCoord = (vert?pDpyInfo->yTables:pDpyInfo->xTables)[toScreenNum][pDpyInfo->fromConnCoord];
       }
     } else { /* DECR */
       if (toScreenNum != 0) { /* previous screen */
 	toScreenNum = --(pDpyInfo->toScreen);
-	fromX = pDpyInfo->fromXDecr;
-	toX = pDpyInfo->xTables[toScreenNum][fromX];
+	fromCoord = pDpyInfo->fromDecrCoord;
+	toCoord = (vert?pDpyInfo->yTables:pDpyInfo->xTables)[toScreenNum][fromCoord];
       } else { /* disconnect! */
 	if (doBtnBlock &&
 	    (pEv->state & (Button1Mask | Button2Mask | Button3Mask |
@@ -987,23 +1037,26 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
 	  bAbortedDisconnect = True;
 	else {
 	  DoDisconnect(pDpyInfo);
-	  fromX = pDpyInfo->fromXDisc;
+	  fromCoord = pDpyInfo->fromDiscCoord;
 	}
-	toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
+	toCoord = (vert?pDpyInfo->yTables:pDpyInfo->xTables)[toScreenNum][pDpyInfo->fromConnCoord];
       }
-    } /* END if toX */
+    } /* END if toCoord */
     if (!bAbortedDisconnect) {
       fromDpy = pDpyInfo->fromDpy;
       XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0, 
-		   fromX, pEv->y_root);
+		   vert ? pEv->x_root : fromCoord,
+		   vert ? fromCoord : pEv->y_root);
       XFlush(fromDpy);
     }
   } /* END if SPECIAL_COORD */
-  pDpyInfo->lastFromX = fromX;
+  pDpyInfo->lastFromCoord = fromCoord;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    XTestFakeMotionEvent(pShadow->dpy, toScreenNum, toX,
-			 pDpyInfo->yTables[toScreenNum][pEv->y_root], 0);
+    XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
+		      vert?pDpyInfo->xTables[toScreenNum][pEv->x_root]:toCoord,
+		      vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],
+		      0);
     XFlush(pShadow->dpy);
   } /* END for */
     
@@ -1036,10 +1089,17 @@ XCrossingEvent *pEv;
   if ((pEv->mode == NotifyNormal) &&
       (pDpyInfo->mode == X2X_DISCONNECTED) && (dpy == pDpyInfo->fromDpy)) {
     DoConnect(pDpyInfo);
-    XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0, 
-		 pDpyInfo->fromXConn, pEv->y_root);
-    xmev.x_root = pDpyInfo->lastFromX = pDpyInfo->fromXConn;
-    xmev.y_root = pEv->y_root;
+    if (pDpyInfo->vertical) {
+      XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0, 
+		   pEv->x_root, pDpyInfo->fromConnCoord);
+      xmev.x_root = pEv->x_root;
+      xmev.y_root = pDpyInfo->lastFromCoord = pDpyInfo->fromConnCoord;
+    } else {
+      XWarpPointer(fromDpy, None, pDpyInfo->root, 0, 0, 0, 0, 
+		   pDpyInfo->fromConnCoord, pEv->y_root);
+      xmev.x_root = pDpyInfo->lastFromCoord = pDpyInfo->fromConnCoord;
+      xmev.y_root = pEv->y_root;
+    }
     xmev.same_screen = True;
     ProcessMotionNotify(NULL, pDpyInfo, &xmev);
   }  /* END if NotifyNormal... */
@@ -1145,8 +1205,13 @@ XButtonEvent *pEv;
     if (!state) { /* all buttons up: time to (dis)connect */
       if (pDpyInfo->mode == X2X_AWAIT_RELEASE) { /* connect */
 	DoConnect(pDpyInfo);
-	xmev.x_root = pDpyInfo->lastFromX = pEv->x_root;
-	xmev.y_root = pEv->y_root;
+	if (pDpyInfo->vertical) {
+	  xmev.x_root = pEv->x_root;
+	  xmev.y_root = pDpyInfo->lastFromCoord = pEv->y_root;
+	} else {
+	  xmev.x_root = pDpyInfo->lastFromCoord = pEv->x_root;
+	  xmev.y_root = pEv->y_root;
+	}
 	xmev.same_screen = True;
 	ProcessMotionNotify(NULL, pDpyInfo, &xmev);
       } else { /* disconnect */

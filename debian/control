@@ -2,12 +2,11 @@ Source: x2x
 Maintainer: Charles Briscoe-Smith <cpbs@debian.org>
 Section: x11
 Priority: optional
-Standards-Version: 2.4.0.0
+Standards-Version: 2.4.1
 
 Package: x2x
 Architecture: any
 Depends: ${x2x:Depends}
-Suggests: propsel
 Section: x11
 Priority: optional
 Description: Link two X displays together, simulating a multiheaded display

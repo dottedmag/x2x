@@ -17,12 +17,12 @@ the input focus.  Clicking on the x2x window causes the mouse on the
 a subsequent multiple button click on the "to" display returns control
 to the "from" display.
 
-If the -east or -west options are specified on the command line, x2x
-starts up with a different interface.  When the mouse moves to the
-(east or west) side of the default screen on the "from" display, the
-cursor slides over to the "to" display.  When the mouse returns to
-to side of the "to" display that it entered, it slides back onto
-the "from" display.
+If the -north, -south, -east or -west options are specified on the
+command line, x2x starts up with a different interface.  When the mouse
+moves to the top, bottom, east side or west side of the default screen
+on the "from" display, the cursor slides over to the "to" display.
+When the mouse returns to to side of the "to" display that it entered,
+it slides back onto the "from" display.
 
 Unless the -nosel option is specified, x2x relays X selections from
 one display to the other.
@@ -55,6 +55,14 @@ Default is equivalent to the default display.
 Indicates the ("from") display that remotely controls the "to" display.
 Default is equivalent to the default display.
 .TP
+.B \-north
+.IP 
+Slide off the north side of the "to" display onto the "from" display.
+.TP
+.B \-south
+.IP 
+Slide off the south side of the "to" display onto the "from" display.
+.TP
 .B \-east
 .IP 
 Slide off the east side of the "to" display onto the "from" display.
@@ -70,7 +78,7 @@ The font used in the x2x window. (Overridden by -east or -west.)
 .B \-geometry \fIspecification\fP
 .IP 
 The X geometry specification for the x2x window.  
-(Overridden by -east or -west.)
+(Overridden by -north, -south, -east or -west.)
 .TP
 .B \-wait
 .IP 
@@ -85,14 +93,14 @@ X server to track the cursor.
 .TP
 .B \-buttonblock
 .IP 
-If this option is enabled with -east or -west, the cursor will not
-slide back onto the "from" display when one or more mouse buttons
-are pressed.
+If this option is enabled with -north, -south, -east or -west, the
+cursor will not slide back onto the "from" display when one or more
+mouse buttons are pressed.
 .TP
 .B \-nomouse
 .IP 
 Don't capture the mouse.
-(Overridden by -east or -west.)
+(Overridden by -north, -south, -east or -west.)
 .TP
 .B \-nopointermap
 .IP 
@@ -119,11 +127,12 @@ To disable this feature, use the \-noautoup command line option.
 .TP
 .B \-resurface
 .IP 
-Ugly hack to work-around window manager ugliness.  The -east and -west
-modes actually put a small window on the side of the "from" display.
-This option causes this window to resurface itself if another window
-ever obscures it.  This option can cause really nasty behavior if another
-application tries to do the same thing.  Useful for login scripts.
+Ugly hack to work-around window manager ugliness.  The -north, -south,
+-east and -west modes actually put a small window on the side of the
+"from" display.  This option causes this window to resurface itself if
+another window ever obscures it.  This option can cause really nasty
+behavior if another application tries to do the same thing.  Useful for
+login scripts.
 .TP
 .B \-shadow \fIdisplay\fP
 .IP 
@@ -141,6 +150,9 @@ sticky option prevents autoup for the specified key.  Look in
 David Chaiken
 .br
 (chaiken@pa.dec.com)
+.PP
+Addition of -north and -south options by Charles Briscoe-Smith
+<cpbs@debian.org>.
 .SH BUGS
 This software is experimental!  Heaven help you if your network
 connection should go down.  Caveat hacker.  TANSTAAFL.

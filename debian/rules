@@ -1,8 +1,8 @@
 #! /usr/bin/make -f
 # Generic debian/rules
-# Written by Charles Briscoe-Smith, 1997
+# Written by Charles Briscoe-Smith, 1997-8
 # Contributed to the public domain
-# $Id: rules,v 1.10 1998/02/20 02:40:03 cpb4 Exp $
+# $Id: rules,v 1.11 1998/08/18 13:43:05 cpb4 Exp $
 
 default:
 	@echo "Specify a target:"
@@ -24,8 +24,11 @@ cpbs-install-tree: cpbs-do-build
 	withecho () { echo " $$@" >&2; "$$@"; }; \
 	for package in `sed -n '/^Package: /{;s/^Package: \+\([a-zA-Z0-9][a-zA-Z0-9+.-]\+\) *$$/\1/;h;};/^Architecture: .*\(any\|all\|'\`dpkg --print-architecture\`'\)/{;g;p;}' < debian/control` ; do \
 		withecho install -d debian/tmp-$$package/DEBIAN; \
-		withecho debian/process install-$$package ROOT=`pwd`/debian/tmp-$$package;\
-		withecho dpkg-gencontrol -isp -p$$package -Pdebian/tmp-$$package; \
+		withecho debian/process install-$$package \
+		                ROOT=`pwd`/debian/tmp-$$package \
+		                CONTROL=`pwd`/debian/tmp-$$package/DEBIAN; \
+		withecho dpkg-gencontrol -isp -p$$package \
+		                -Pdebian/tmp-$$package; \
 	done
 	touch cpbs-install-tree
 
@@ -47,7 +50,9 @@ binary-arch: check-root build
 	for package in `sed -n '/^Package: /{;s/^Package: \+\([a-zA-Z0-9][a-zA-Z0-9+.-]\+\) *$$/\1/;h;};/^Architecture: .*\(any\|'\`dpkg --print-architecture\`'\)/{;g;p;}' < debian/control` ; do \
 		withecho chown -R 0.0 debian/tmp-$$package; \
 		withecho chmod -R go-ws debian/tmp-$$package; \
-		withecho debian/process finalise-$$package ROOT=debian/tmp-$$package; \
+		withecho debian/process finalise-$$package \
+		                ROOT=`pwd`/debian/tmp-$$package \
+		                CONTROL=`pwd`/debian/tmp-$$package/DEBIAN; \
 		withecho dpkg-deb --build debian/tmp-$$package ..; \
 	done
 
@@ -59,7 +64,9 @@ binary-indep: check-root build
 	for package in `sed -n '/^Package: /{;s/^Package: \+\([a-zA-Z0-9][a-zA-Z0-9+.-]\+\) *$$/\1/;h;};/^Architecture: .*all/{;g;p;}' < debian/control` ; do \
 		withecho chown -R 0.0 debian/tmp-$$package; \
 		withecho chmod -R go-ws debian/tmp-$$package; \
-		withecho debian/process finalise-$$package ROOT=debian/tmp-$$package; \
+		withecho debian/process finalise-$$package \
+		                ROOT=`pwd`/debian/tmp-$$package \
+		                CONTROL=`pwd`/debian/tmp-$$package/DEBIAN; \
 		withecho dpkg-deb --build debian/tmp-$$package ..; \
 	done
 
