@@ -199,7 +199,6 @@ int     *pwidth, *pheight;
 {
   int           fontheight, fontwidth;
   int           width, height;
-  int           len;
   int           format;
   unsigned      minchar, maxchar;
   unsigned char *buffer, thechar;

@@ -1,3 +1,24 @@
+x2x (1.27-5.1) unstable; urgency=low
+
+  * NMU
+  * use debhelper rather than cpbs - it's more standard and gives us FHS
+  * compile with "-g -O2" as per policy
+  * merge in patch from Tor Slettnes <tor@slett.net> to map buttons and not
+    send any which the remote end can't handle (closes: #80629, #56252)
+  * patches downloaded from http://www.eax.com/other/x2x-1.27-1.28.patch:
+    - unofficial x2x-1.28 patch from Adam Sulmcki <adam@cfar.umd.edu>
+      which adds an error handler (closes: #56252).  NB: I have only applied
+      the cleanup parts of the patch since #80629 fixes the problem better.
+      I've left the patch in debian/errorhandler.diff in case it's needed in
+      future.
+    - from Greg J. Badros <gjb@cs.washington.edu>:
+      -  fix for the feedback loop which can arise
+      -  save some screen estate
+  * patch from Ben Harris <bjh21@cam.ac.uk> to change title of window
+    (closes: #54045)
+
+ -- Adrian Bridgett <bridgett@debian.org>  Tue,  9 Jan 2001 18:48:27 +0000
+
 x2x (1.27-5) unstable; urgency=low
 
   * Fix boundary adjustment for vertical mode (-north and -south).

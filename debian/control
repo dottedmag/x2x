@@ -1,12 +1,13 @@
 Source: x2x
 Maintainer: Charles Briscoe-Smith <cpbs@debian.org>
+Build-Depends: debhelper,xlibs-dev,xutils
 Section: x11
 Priority: optional
-Standards-Version: 2.4.1
+Standards-Version: 3.2.1.0
 
 Package: x2x
 Architecture: any
-Depends: ${x2x:Depends}
+Depends: ${shlibs:Depends}
 Section: x11
 Priority: optional
 Description: Link two X displays together, simulating a multiheaded display

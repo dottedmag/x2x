@@ -46,16 +46,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/Xatom.h> /* for selection */
+#include <X11/extensions/XTest.h>
 #include <sys/types.h> /* for select */
 #include <sys/time.h> /* for select */
-#include "format.h"
 
 /*#define DEBUG*/
+
+#ifndef MIN
+#define MIN(x,y) (((x) < (y)) ? (x) : (y))
+#endif
+#ifndef MAX
+#define MAX(x,y) (((x) > (y)) ? (x) : (y))
+#endif
 
 /**********
  * definitions for edge
@@ -100,25 +108,6 @@ static void    RefreshPointerMapping();
 static void    Usage();
 
 /**********
- * text formatting instructions
- **********/
-#define toDpyFormatLength (sizeof(toDpyFormat) / sizeof(Format))
-static Format toDpyFormat[] = {
-  FormatMeasureText,
-  FormatSetLeft,      0,
-  FormatSetTop,       0,
-  FormatAddHalfTextX, 1,
-  FormatAddHalfTextY, 3,
-  FormatString, (Format)"unknown",
-  FormatAddHalfTextX, 1,
-  FormatAddHalfTextY, 1
-  };
-/* indexes of values to be filled in at runtime */
-#define toDpyLeftIndex    2
-#define toDpyTopIndex     4
-#define toDpyStringIndex 10 
-
-/**********
  * stuff for selection forwarding
  **********/
 typedef struct _dpyxtra {
@@ -142,6 +131,8 @@ typedef struct _fakestr {
 #define FAKE_BUTTON 1
 
 #define N_BUTTONS   5
+
+#define MAX_BUTTONMAPEVENTS 20
 
 #define GETDPYXTRA(DPY,PDPYINFO)\
    (((DPY) == (PDPYINFO)->fromDpy) ?\
@@ -169,8 +160,8 @@ typedef struct {
   GC      textGC;
   Atom    wmpAtom, wmdwAtom;
   Cursor  grabCursor;
-  XFS     *font;
-  int     twidth, theight;
+  Font    fid;
+  int     width, height, twidth, theight, tascent;
   Bool    vertical;
   int     lastFromCoord;
   int     unreasonableDelta;
@@ -229,6 +220,7 @@ static char    *fromDpyName = NULL;
 static char    *toDpyName   = NULL;
 static char    *defaultFN   = "-*-times-bold-r-*-*-*-180-*-*-*-*-*-*";
 static char    *fontName    = "-*-times-bold-r-*-*-*-180-*-*-*-*-*-*";
+static char    *label       = NULL;
 static char    *pingStr     = "PING"; /* atom for ping request */
 static char    *geomStr     = NULL;
 static Bool    waitDpy      = False;
@@ -243,13 +235,13 @@ static int     triggerw     = 2;
 static Bool    doPointerMap = True;
 static PSTICKY stickies     = NULL;
 static Bool    doBtnBlock   = False;
+static int     nButtons     = 0;
+static KeySym  buttonmap[N_BUTTONS + 1][MAX_BUTTONMAPEVENTS + 1];
 
 /**********
  * main
  **********/
-main(argc, argv)
-int  argc;
-char **argv;
+int main(int argc, char **argv)
 {
   Display *fromDpy;
   PSHADOW pShadow;
@@ -337,10 +329,17 @@ char **argv;
   extern  char *lawyerese;
   PSTICKY pNewSticky;
   KeySym  keysym;
+  int     button;
+  int     eventno;
+  char    *keyname, *argptr;
 
 #ifdef DEBUG
   printf ("programStr = %s\n", programStr);
 #endif  
+
+  /* Clear button map */
+  for (button = 0; button <= N_BUTTONS; button++)
+      buttonmap[button][0] = NoSymbol;
 
   for (arg = 1; arg < argc; ++arg) {
     if (!strcasecmp(argv[arg], "-from")) {
@@ -363,6 +362,13 @@ char **argv;
 
 #ifdef DEBUG
       printf ("fontName = %s\n", fontName);
+#endif
+    } else if (!strcasecmp(argv[arg], "-label")) {
+      if (++arg >= argc) Usage();
+      label = argv[arg];
+
+#ifdef DEBUG
+      printf ("label = %s\n", label);
 #endif
     } else if (!strcasecmp(argv[arg], "-geometry")) {
       if (++arg >= argc) Usage();
@@ -443,6 +449,34 @@ char **argv;
       } else {
 	printf("x2x: warning: can't translate %s\n", argv[arg]);
       }
+    } else if (!strcasecmp(argv[arg], "-buttonmap")) {
+	if (++arg >= argc) Usage();
+	button = atoi(argv[arg]);
+
+	if ((button < 1) || (button > N_BUTTONS))
+	    printf("x2x: warning: invalid button %d\n", button);
+	else if (++arg >= argc)
+	    Usage();
+	else
+	{
+#ifdef DEBUG
+	    printf("will map button %d to keysyms '%s'\n", button, argv[arg]);
+#endif
+	    argptr  = argv[arg];
+	    eventno = 0;
+	    while ((keyname = strtok(argptr, " \t\n\r")) != NULL)
+	    {
+		if ((keysym = XStringToKeysym(keyname)) == NoSymbol)
+		    printf("x2x: warning: can't translate %s\n", keyname);
+		else if (eventno + 1 >= MAX_BUTTONMAPEVENTS)
+		    printf("x2x: warning: too many keys mapped to button %d\n",
+			   button);
+		else
+		    buttonmap[button][eventno++] = keysym;
+		argptr = NULL;
+	    }
+	    buttonmap[button][eventno] = NoSymbol;
+	}
     } else if (!strcasecmp(argv[arg], "-resurface")) {
       doResurface = True;
 #ifdef DEBUG
@@ -479,6 +513,7 @@ static void Usage()
   printf("       -big\n");
   printf("       -buttonblock\n");
   printf("       -nomouse\n");
+  printf("       -nopointermap\n");
   printf("       -north\n");
   printf("       -south\n");
   printf("       -east\n");
@@ -488,6 +523,8 @@ static void Usage()
   printf("       -resurface\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
+  printf("       -label <LABEL>\n");
+  printf("       -buttonmap <button#> \"<keysym> ...\"\n");
   exit(4);
 
 } /* END Usage */
@@ -533,7 +570,7 @@ Display *toDpy;
   toConn   = XConnectionNumber(toDpy);
 
   while (True) { /* FOREVER */
-    if (fromPending = XPending(fromDpy))
+    if ((fromPending = XPending(fromDpy)))
       if (ProcessEvent(fromDpy, &dpyInfo)) /* done! */
 	break;
 
@@ -557,7 +594,7 @@ static void InitDpyInfo(pDpyInfo)
 PDPYINFO pDpyInfo;
 {
   Display   *fromDpy, *toDpy;
-  Screen    *fromScreen, *toScreen;
+  Screen    *fromScreen;
   long      black, white;
   int       fromHeight, fromWidth, toHeight, toWidth;
   Pixmap    nullPixmap;
@@ -567,7 +604,7 @@ PDPYINFO pDpyInfo;
   int       *heights, *widths;
   int       counter;
   int       nScreens, screenNum;
-  int       twidth, theight; /* text dimensions */
+  int       twidth, theight, tascent; /* text dimensions */
   int       xoff, yoff; /* window offsets */
   unsigned int width, height; /* window width, height */
   int       geomMask;		/* mask returned by parse */
@@ -579,7 +616,7 @@ PDPYINFO pDpyInfo;
   int       eventMask;
   GC        textGC;
   char      *windowName;  
-  XFS       *font;
+  Font      fid;
   PSHADOW   pShadow;
   int       triggerLoc;
   Bool      vertical;
@@ -641,33 +678,47 @@ PDPYINFO pDpyInfo;
 
     xswa.background_pixel = black;
     /* fromWidth - 1 doesn't seem to work for some reason */
+    /* Use triggerw offsets so that if an x2x is running
+       along the left edge and along the north edge, both with
+       -resurface, we don't get a feedback loop of them each
+       fighting to be on top.
+        --09/27/99 Greg J. Badros <gjb@cs.washington.edu> */
+    /* also, make it an InputOnly window so I don't lose 
+       screen real estate --09/29/99 gjb */
     trigger = pDpyInfo->trigger = 
       XCreateWindow(fromDpy, root,
-		    vertical ? 0 : triggerLoc,
-		    vertical ? triggerLoc : 0,
-		    vertical ? fromWidth : triggerw,
-		    vertical ? triggerw : fromHeight,
-		    0, 0, InputOutput, 0, 
-		    CWBackPixel | CWOverrideRedirect, &xswa);
-    font = NULL;
+		    vertical ? triggerw : triggerLoc,
+		    vertical ? triggerLoc : triggerw,
+		    vertical ? fromWidth - (2*triggerw) : triggerw,
+		    vertical ? triggerw : fromHeight - (2*triggerw),
+		    0, 0, InputOnly, 0, 
+		    CWOverrideRedirect, &xswa);
+    fid = 0;
 
   } else { /* normal window for text: do size grovelling */
     pDpyInfo->grabCursor = XCreateFontCursor(fromDpy, XC_exchange);
     eventMask |= StructureNotifyMask | ExposureMask;
     if (doMouse) eventMask |= ButtonPressMask | ButtonReleaseMask;
 
+    if (label == NULL)
+      label = toDpyName;
     /* determine size of text */
-    if (((font = XLoadQueryFont(fromDpy, fontName)) != NULL) ||
-	((font = XLoadQueryFont(fromDpy, defaultFN)) != NULL) ||
-	((font = XLoadQueryFont(fromDpy, "fixed")) != NULL)) { 
+    if (((fid = XLoadFont(fromDpy, fontName)) != 0) ||
+      ((fid = XLoadFont(fromDpy, defaultFN)) != 0) ||
+      ((fid = XLoadFont(fromDpy, "fixed")) != 0)) {
       /* have a font */
-      toDpyFormat[toDpyStringIndex] = (Format)toDpyName;
-      formatText(NULL, NULL, NULL, font, 
-		 toDpyFormatLength, toDpyFormat, &twidth, &theight);
+      int ascent, descent, direction;
+      XCharStruct overall;
+
+      XQueryTextExtents(fromDpy, fid, label, strlen(label),
+			&direction, &ascent, &descent, &overall);
+      twidth =  - overall.lbearing + overall.rbearing;
+      theight = ascent + descent;
+      tascent = ascent;
 
       textGC = pDpyInfo->textGC = XCreateGC(fromDpy, root, 0, NULL);
       XSetState(fromDpy, textGC, black, white, GXcopy, AllPlanes);
-      XSetFont(fromDpy, textGC, font->fid);
+      XSetFont(fromDpy, textGC, fid);
 
     } else { /* should not have to execute this clause: */
       twidth = theight = 100; /* default window size */
@@ -675,8 +726,8 @@ PDPYINFO pDpyInfo;
 
     /* determine size of window */
     xoff = yoff = 0;
-    width = twidth;
-    height = theight;
+    width = twidth + 4; /* XXX gap around text -- should be configurable */
+    height = theight + 4;
     geomMask = XParseGeometry(geomStr, &xoff, &yoff, &width, &height);
     switch (gravMask = (geomMask & (XNegative | YNegative))) {
     case (XNegative | YNegative): gravity = SouthEastGravity; break;
@@ -834,15 +885,18 @@ PDPYINFO pDpyInfo;
   pDpyInfo->eventMask = eventMask; /* save for future munging */
   if (doSel) XSetSelectionOwner(fromDpy, XA_PRIMARY, trigger, CurrentTime);
   XMapRaised(fromDpy, trigger);
-  if (pDpyInfo->font = font) { /* paint text */
+  if (pDpyInfo->fid = fid) { /* paint text */
     /* position text */
     pDpyInfo->twidth = twidth;
     pDpyInfo->theight = theight;
-    toDpyFormat[toDpyLeftIndex] = MAX(0,((width - twidth) / 2));
-    toDpyFormat[toDpyTopIndex]  = MAX(0,((height - theight) / 2));
+    pDpyInfo->tascent = tascent;
+    pDpyInfo->width = width;
+    pDpyInfo->height = height;
 
-    formatText(fromDpy, trigger, &(textGC), font, 
-	       toDpyFormatLength, toDpyFormat, NULL, NULL);
+    XDrawImageString(fromDpy, trigger, textGC,
+		     MAX(0,((width - twidth) / 2)),
+		     MAX(0,((height - theight) / 2)) + tascent, label,
+		     strlen(label));
   } /* END if font */
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
@@ -1070,10 +1124,12 @@ PDPYINFO pDpyInfo;
 XExposeEvent *pEv;
 {
   XClearWindow(pDpyInfo->fromDpy, pDpyInfo->trigger);
-  if (pDpyInfo->font)
-    formatText(pDpyInfo->fromDpy, pDpyInfo->trigger, 
-	       &(pDpyInfo->textGC), pDpyInfo->font, 
-	       toDpyFormatLength, toDpyFormat, NULL, NULL);
+  if (pDpyInfo->fid)
+    XDrawImageString(pDpyInfo->fromDpy, pDpyInfo->trigger, pDpyInfo->textGC,
+		     MAX(0,((pDpyInfo->width - pDpyInfo->twidth) / 2)),
+		     MAX(0,((pDpyInfo->height - pDpyInfo->theight) / 2)) +
+		     pDpyInfo->tascent, label, strlen(label));
+
   return False;
   
 } /* END ProcessExpose */
@@ -1115,7 +1171,10 @@ XButtonEvent *pEv;
   int state;
   PSHADOW   pShadow;
   unsigned int toButton;
-
+  KeySym  keysym;
+  KeyCode keycode;
+  int     eventno;
+   
   switch (pDpyInfo->mode) {
   case X2X_DISCONNECTED:
     pDpyInfo->mode = X2X_AWAIT_RELEASE;
@@ -1124,17 +1183,48 @@ XButtonEvent *pEv;
 #endif
     break;
   case X2X_CONNECTED:
-    if (pEv->button <= N_BUTTONS) toButton = pDpyInfo->inverseMap[pEv->button];
-    for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-      XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
+	if ((pEv->button <= N_BUTTONS) &&
+	    (buttonmap[pEv->button][0] != NoSymbol))
+	{
+	    for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
+	    {
 #ifdef DEBUG
-      printf("from button %d down, to button %d down\n", pEv->button,toButton);
+		printf("Button %d is mapped, sending keys: ", pEv->button);
 #endif
-      XFlush(pShadow->dpy);
-    } /* END for */
-    if (doAutoUp)
-      FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True);
-    if (doEdge) break;
+		for (eventno = 0;
+		     (keysym = buttonmap[pEv->button][eventno]) != NoSymbol;
+		     eventno++)
+		{
+		    if (keycode = XKeysymToKeycode(pShadow->dpy, keysym)) {
+			XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+			XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+			XFlush(pShadow->dpy);
+#ifdef DEBUG
+			printf(" (0x%04X)", keycode);
+#endif
+		    }
+#ifdef DEBUG
+		    else
+			printf(" (no code)");
+#endif
+		}
+#ifdef DEBUG
+		printf("\n");
+#endif
+	    }
+	} else if (pEv->button <= nButtons) {
+	    toButton = pDpyInfo->inverseMap[pEv->button];
+	    for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+		XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
+#ifdef DEBUG
+		printf("from button %d down, to button %d down\n", pEv->button,toButton);
+#endif
+		XFlush(pShadow->dpy);
+	    } /* END for */
+	    if (doAutoUp)
+		FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True);
+	}
+     if (doEdge) break;
 
     /* check if more than one button pressed */
     state = pEv->state;
@@ -1173,16 +1263,21 @@ XButtonEvent *pEv;
 
   if ((pDpyInfo->mode == X2X_CONNECTED) || 
       (pDpyInfo->mode == X2X_CONN_RELEASE)) {
-    if (pEv->button <= N_BUTTONS) toButton = pDpyInfo->inverseMap[pEv->button];
-    for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-      XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
+	if ((pEv->button <= nButtons) &&
+	    (buttonmap[pEv->button][0] == NoSymbol))
+	    // Do not process button release if it was mapped to keys
+	{
+	    toButton = pDpyInfo->inverseMap[pEv->button];
+	    for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+		XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
 #ifdef DEBUG
-      printf("from button %d up, to button %d up\n", pEv->button, toButton);
+		printf("from button %d up, to button %d up\n", pEv->button, toButton);
 #endif
-      XFlush(pShadow->dpy);
-    } /* END for */
-    if (doAutoUp)
-      FakeAction(pDpyInfo, FAKE_BUTTON, toButton, False);
+		XFlush(pShadow->dpy);
+	    } /* END for */
+	    if (doAutoUp)
+		FakeAction(pDpyInfo, FAKE_BUTTON, toButton, False);
+	}  
   } /* END if */
 
   if (doEdge) return False;
@@ -1269,12 +1364,10 @@ Display  *dpy;
 PDPYINFO pDpyInfo;
 XConfigureEvent *pEv;
 {
-  if (pDpyInfo->font) {
+  if (pDpyInfo->fid) {
     /* reposition text */
-    toDpyFormat[toDpyLeftIndex] = 
-      MAX(0,((pEv->width - pDpyInfo->twidth) / 2));
-    toDpyFormat[toDpyTopIndex]  = 
-      MAX(0,((pEv->height - pDpyInfo->theight) / 2));
+    pDpyInfo->width = pEv->width;
+    pDpyInfo->height = pEv->height;
   } /* END if font */
   return False;
 
@@ -1341,7 +1434,6 @@ Display *dpy;
 PDPYINFO pDpyInfo;
 XPropertyEvent *pEv;
 {
-  XSelectionRequestEvent *pSelReq;
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
 
 #ifdef DEBUG
@@ -1600,7 +1692,6 @@ PDPYINFO            pDpyInfo;
 {
   unsigned int buttCtr;
   unsigned char buttonMap[N_BUTTONS];
-  int nButtons;
 
   if (dpy == pDpyInfo->toDpy) { /* only care about toDpy */
     /* straightforward mapping */
