@@ -91,6 +91,7 @@
 #include <windowsx.h>
 #include <assert.h>
 #include "keymap.h"
+#include "resource.h"
 #endif
 
 /*#define DEBUG*/
@@ -219,11 +220,15 @@ typedef struct {
   int     onedge;
   int     fromWidth, fromHeight;
   int     wdelta;
+  int     lastFromY;
   HWND    hwndNextViewer;
   // int     initialClipboardSeen;
   char    *winSelText;
   int     owntoXsel;
   int     expectSelNotify;
+  int     expectOwnClip;
+  int     winSSave;
+
 #endif /* WIN_2_X */
   
   /* stuff on "to" display */
@@ -776,6 +781,8 @@ PDPYINFO pDpyInfo;
   pDpyInfo->toDpyXtra.propWin = (Window) 0;
 
 #ifdef WIN_2_X
+  gravity = NorthWestGravity;   /* keep compliler happy */
+
   if (fromDpy == fromWin) {
     fromWidth=GetSystemMetrics(SM_CXSCREEN);
     fromHeight=GetSystemMetrics(SM_CYSCREEN);
@@ -868,7 +875,8 @@ PDPYINFO pDpyInfo;
       wndclass.hInstance	= m_instance;
       /* XXX mdh - For now just use system provided resources */
       wndclass.hIcon		= LoadIcon(NULL, IDI_APPLICATION);
-      wndclass.hCursor		= LoadCursor(NULL, IDC_NO);
+      // wndclass.hCursor	= LoadCursor(NULL, IDC_NO);
+      wndclass.hCursor		= LoadCursor(m_instance, MAKEINTRESOURCE(IDC_NOCURSOR));
       wndclass.hbrBackground	= (HBRUSH) GetStockObject(BLACK_BRUSH);
       wndclass.lpszMenuName	= (const TCHAR *) NULL;
       wndclass.lpszClassName	= fromWinName;
@@ -922,6 +930,7 @@ PDPYINFO pDpyInfo;
       // this will cause us to be notified immediately of
       // the current state.
       // We don't want to send that.
+      pDpyInfo->expectOwnClip = 0;
       if (doSel) {
 	// pDpyInfo->initialClipboardSeen = False;
 	pDpyInfo->winSelText = NULL;
@@ -930,7 +939,8 @@ PDPYINFO pDpyInfo;
 
       pDpyInfo->onedge = 0;
       MoveWindowToEdge(pDpyInfo);
-
+      /* Keep compile happy */
+      trigger = 0;
     } else {
 #endif
     /* fromWidth - 1 doesn't seem to work for some reason */
@@ -1091,7 +1101,7 @@ PDPYINFO pDpyInfo;
 			  CopyFromParent, 0, NULL);
   pDpyInfo->toDpyXtra.propWin = propWin;
 #ifdef DEBUG
-  printf("Create window %x on todpy\n", propWin);
+  printf("Create window %x on todpy\n", (unsigned int)propWin);
 #endif
   /* initialize pointer mapping */
   RefreshPointerMapping(toDpy, pDpyInfo);
@@ -1117,14 +1127,19 @@ PDPYINFO pDpyInfo;
     pDpyInfo->toDpyXtra.sState       = SELSTATE_OFF;
     pDpyInfo->toDpyXtra.pingAtom     = XInternAtom(toDpy, pingStr, False);
     pDpyInfo->toDpyXtra.pingInProg   = False;
-    XSelectInput(toDpy, propWin, PropertyChangeMask);
+#ifdef WIN_2_X
+    if (fromDpy != fromWin)
+#endif
+      XSelectInput(toDpy, propWin, PropertyChangeMask);
     XSetSelectionOwner(toDpy, XA_PRIMARY, propWin, CurrentTime);
 #ifdef WIN_2_X
 #ifdef DEBUG
-    printf("SelectionOwner to propWin %x\n", propWin);
+    printf("SelectionOwner to propWin %x\n", (unsigned int)propWin);
 #endif
     pDpyInfo->owntoXsel = 1;
     pDpyInfo->expectSelNotify = 0;
+    pDpyInfo->expectOwnClip = 0;
+    pDpyInfo->winSSave = 0;
 #endif
   } /* END if doSel */
 
@@ -1975,7 +1990,7 @@ void MoveWindowToEdge(PDPYINFO pDpyInfo) {
   SetWindowPos(pDpyInfo->bigwindow, HWND_BOTTOM,
 	       0, 0,
 	       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
-	       SWP_HIDEWINDOW | SWP_NOREDRAW);
+	       SWP_HIDEWINDOW /* | SWP_NOREDRAW */);
 
   SetWindowPos(pDpyInfo->edgewindow, HWND_TOPMOST,
 	       (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth -1: 0,
@@ -2158,6 +2173,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	  return 0;
 	}
 #endif
+
 	WinPointerEvent(pDpyInfo, x,y, wParam, iMsg);
 
       } /* END == bigwindow */
@@ -2201,6 +2217,24 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     case WM_SYSKEYDOWN:
     case WM_SYSKEYUP:
     {
+#if 0
+      if (pDpyInfo->winSSave) {
+#ifdef DEBUG
+	printf("Attempt to restore from screen saver (key)!\n");
+#endif
+	if (!pDpyInfo->onedge) {
+	  SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
+		       0, 0,
+		       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
+		       SWP_HIDEWINDOW);
+	  SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
+		       0, 0,
+		       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
+		       SWP_SHOWWINDOW  | SWP_NOREDRAW);
+	}
+	pDpyInfo->winSSave = 0;
+      }
+#endif /* 0 */
       WinKeyEvent(pDpyInfo, (int) wParam, (DWORD) lParam);
       return 0;
     }
@@ -2239,7 +2273,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
       // Remove us from the clipboard viewer chain
       if (doSel) {
-	int res = ChangeClipboardChain(pDpyInfo->edgewindow, 
+	/*int res =*/ ChangeClipboardChain(pDpyInfo->edgewindow, 
 				       pDpyInfo->hwndNextViewer);
       }
 
@@ -2290,15 +2324,35 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	  }
 	  GlobalUnlock(hglb);
 	  CloseClipboard();
-	  /* This can race during creation */
-	  /* but we will claim selection in the init routine */
-	  if (pDpyInfo->toDpyXtra.propWin != 0) {
+	  /* Prevent grabbing X selection in response to us copying  */
+	  /* it to windows (mostly cosmetic in that the real source  */
+	  /* X app will unhighlight or whatever on loosing selection)*/
+	  /* XXX mdh - the strlen+1 isn't guarenteed to be unique */
+	  /* but I think it is good enough, since if it goes wrong */
+	  /* the X app looses its selection but the actual text is preserved */
+	  if (pDpyInfo->expectOwnClip != 0) {
+	    if (pDpyInfo->expectOwnClip == (len+1)) {
+	      /* Its ours stop looking */
+	      pDpyInfo->expectOwnClip = 0;
 #ifdef DEBUG
-	    printf("Selection Owner to %x\n", pDpyInfo->toDpyXtra.propWin);
+	      printf("Saw own addition to clipboard\n");
+	    } else {
+		printf("Oops. expectOwrClip %d with len %d\n",
+		       pDpyInfo->expectOwnClip, len);
 #endif
-	    XSetSelectionOwner(pDpyInfo->toDpy, XA_PRIMARY, 
-			       pDpyInfo->toDpyXtra.propWin, CurrentTime);
-	    pDpyInfo->owntoXsel = 1;
+	    }
+	  } else {
+	    /* This can race during creation */
+	    /* but we will claim selection in the init routine */
+	    if (pDpyInfo->toDpyXtra.propWin != 0) {
+#ifdef DEBUG
+	      printf("Selection Owner to %x\n", 
+		     (unsigned int)pDpyInfo->toDpyXtra.propWin);
+#endif
+	      XSetSelectionOwner(pDpyInfo->toDpy, XA_PRIMARY, 
+				 pDpyInfo->toDpyXtra.propWin, CurrentTime);
+	      pDpyInfo->owntoXsel = 1;
+	    }
 	  }
 	}
 	// We have to tell the next clipbard viewer
@@ -2330,6 +2384,19 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       
     }
 
+    case WM_SYSCOMMAND:
+#ifdef DEBUG
+      printf("WM_SYSCOMMAND with wParam %d (0x%x)\n", wParam, wParam);
+#endif
+      if (wParam == SC_SCREENSAVE) {
+	PSHADOW   pShadow;
+	pDpyInfo->winSSave = 1;
+	for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+	  XActivateScreenSaver(pShadow->dpy);
+	  XFlush(pShadow->dpy);
+	} /* END for shadow */
+      }	
+      /* Fall through */
     case WM_SYNCPAINT:
     case WM_PAINT:
       return DefWindowProc(hwnd, iMsg, wParam, lParam);
@@ -2351,11 +2418,15 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     case WM_QUERYNEWPALETTE:
     case WM_PALETTECHANGED:
       return 1;
+
+      /* keep transparent (I hope) */
+    case WM_ERASEBKGND:
+      return 1;
   }
 
-
-  printf("Unused message: 0x%04x\n", iMsg);
-
+#ifdef DEBUG
+  printf("Unused message: %d (0x%04x)\n", iMsg, iMsg);
+#endif
   return DefWindowProc(hwnd, iMsg, wParam, lParam);
 }
 
@@ -2366,15 +2437,23 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
   unsigned int button, toButton;
   int       toScreenNum;
   PSHADOW   pShadow;
-  int       toX, fromX, delta;
+  int       toX, fromX, fromY, delta;
 
   button = 0;
   switch (msg) {
   case WM_MOUSEMOVE:
 
+    /* seems that we get repeats, ignore them */
+    if ((x == pDpyInfo->lastFromX) && (y == pDpyInfo->lastFromY)) {
+#ifdef DEBUGMOUSE
+      printf("m() ");
+#endif
+      return;
+    }
     /* find the screen */
     toScreenNum = pDpyInfo->toScreen;
     fromX = x;
+    fromY = y;
     toX = pDpyInfo->xTables[toScreenNum][fromX];
 
     /* sanity check motion: necessary for nondeterminism surrounding warps */
@@ -2406,7 +2485,10 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
       } /* END if toX */
     } /* END if SPECIAL_COORD */
     pDpyInfo->lastFromX = fromX;
-
+    pDpyInfo->lastFromY = fromY;
+#ifdef DEBUGMOUSE
+    printf("m(%d, %d) ", toX, pDpyInfo->yTables[toScreenNum][y]);
+#endif
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
       XTestFakeMotionEvent(pShadow->dpy, toScreenNum, toX,
 			   pDpyInfo->yTables[toScreenNum][y], 0);
@@ -2719,6 +2801,7 @@ XSelectionEvent *pEv;
 	  GlobalUnlock(hglbCopy); 
 	  // Place the handle on the clipboard. 
 	  SetClipboardData(CF_TEXT, hglbCopy); 
+	  pDpyInfo->expectOwnClip = strlen(prop) + 1;
         } 
 	CloseClipboard(); 
       } /* END if open ok */
