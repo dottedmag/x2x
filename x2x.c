@@ -407,7 +407,7 @@ char **argv;
     exit(1);
   }
 
-  /* no OS independent wat to stop Xlib from complaining via stderr,
+  /* no OS independent way to stop Xlib from complaining via stderr,
      but can always pipe stdout/stderr to /dev/null */
   /* convert to real name: */
 #ifdef WIN_2_X
