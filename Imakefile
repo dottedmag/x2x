@@ -19,7 +19,7 @@ XCOMM -DDEBUG for debugging printfs
 XCOMM -DDEBUGCHATTY for printfs of every Windows message
 XCOMM -DDEBUGMOUSE for printfs of every Windows mouse coordinates
  
-    CDEBUGFLAGS = -O -DDEBUG
+    CDEBUGFLAGS = -O
 
 #ifdef cygwinArchitecture
     EXTRA_DEFINES = -DWIN_2_X
