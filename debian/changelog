@@ -1,3 +1,25 @@
+x2x (1.27-8) unstable; urgency=low
+
+  * Forgot to fix the maintainer in debian/control. Fixed now...
+    (Closes: #155262)
+
+ -- Randolph Chung <tausq@debian.org>  Sat, 24 Aug 2002 10:49:53 -0700
+
+x2x (1.27-7) unstable; urgency=low
+
+  * New Maintainer Upload (Closes: #142235) 
+  * Cleaned up some warnings in the build
+
+ -- Randolph Chung <tausq@debian.org>  Thu, 18 Apr 2002 22:18:32 -0700
+
+x2x (1.27-6) unstable; urgency=low
+
+  * Orphaned.  I haven't used x2x in years now.
+  * Symlink x2x.1 to x2x.man due to changed behaviour in X imake system.
+    (Closes: #142087).
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Wed, 10 Apr 2002 19:01:18 +0100
+
 x2x (1.27-5.1) unstable; urgency=low
 
   * NMU

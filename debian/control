@@ -1,5 +1,5 @@
 Source: x2x
-Maintainer: Charles Briscoe-Smith <cpbs@debian.org>
+Maintainer: Randolph Chung <tausq@debian.org>
 Build-Depends: debhelper,xlibs-dev,xutils
 Section: x11
 Priority: optional

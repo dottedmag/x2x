@@ -885,7 +885,7 @@ PDPYINFO pDpyInfo;
   pDpyInfo->eventMask = eventMask; /* save for future munging */
   if (doSel) XSetSelectionOwner(fromDpy, XA_PRIMARY, trigger, CurrentTime);
   XMapRaised(fromDpy, trigger);
-  if (pDpyInfo->fid = fid) { /* paint text */
+  if ((pDpyInfo->fid = fid)) { /* paint text */
     /* position text */
     pDpyInfo->twidth = twidth;
     pDpyInfo->theight = theight;
@@ -1195,7 +1195,7 @@ XButtonEvent *pEv;
 		     (keysym = buttonmap[pEv->button][eventno]) != NoSymbol;
 		     eventno++)
 		{
-		    if (keycode = XKeysymToKeycode(pShadow->dpy, keysym)) {
+		    if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
 			XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
 			XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
 			XFlush(pShadow->dpy);
@@ -1338,7 +1338,7 @@ XKeyEvent *pEv;
 
   if (pSticky) {
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-      if (keycode = XKeysymToKeycode(pShadow->dpy, keysym)) {
+      if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
 	XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
 	XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
 	XFlush(pShadow->dpy);
@@ -1346,7 +1346,7 @@ XKeyEvent *pEv;
     } /* END for */
   } else {
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-      if (keycode = XKeysymToKeycode(pShadow->dpy, keysym)) {
+      if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
 	XTestFakeKeyEvent(pShadow->dpy, keycode, bPress, 0);
 	XFlush(pShadow->dpy);
       } /* END if */
@@ -1658,7 +1658,7 @@ PDPYINFO pDpyInfo;
       /* send up to all shadows */
       for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
 	if (type == FAKE_KEY) { /* key goes up */
-	  if (keycode = XKeysymToKeycode(pShadow->dpy, pFake->thing)) {
+	  if ((keycode = XKeysymToKeycode(pShadow->dpy, pFake->thing))) {
 	    XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
 #ifdef DEBUG
 	    printf("key 0x%x up\n", pFake->thing);
