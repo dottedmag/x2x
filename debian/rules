@@ -1,0 +1,80 @@
+#! /usr/bin/make -f
+# Generic debian/rules
+# Written by Charles Briscoe-Smith, 1997
+# Contributed to the public domain
+# $Id: rules,v 1.10 1998/02/20 02:40:03 cpb4 Exp $
+
+default:
+	@echo "Specify a target:"
+	@echo " build               compile it"
+	@echo " binary              make all binary packages"
+	@echo " binary-{arch,indep} make subset of all binary packages"
+	@echo " clean               clean up all but files generated for upload"
+	@echo " clean-install-tree  clean up under debian/ but not otherwise"
+
+# Build the package and prepare the install tree
+
+build: cpbs-install-tree
+
+cpbs-install-tree: cpbs-do-build
+	@[ -f debian/process -a -f debian/rules ]
+	rm -rf debian/tmp* debian/files* debian/substvars
+	@set -e; \
+	umask 022; \
+	withecho () { echo " $$@" >&2; "$$@"; }; \
+	for package in `sed -n '/^Package: /{;s/^Package: \+\([a-zA-Z0-9][a-zA-Z0-9+.-]\+\) *$$/\1/;h;};/^Architecture: .*\(any\|all\|'\`dpkg --print-architecture\`'\)/{;g;p;}' < debian/control` ; do \
+		withecho install -d debian/tmp-$$package/DEBIAN; \
+		withecho debian/process install-$$package ROOT=`pwd`/debian/tmp-$$package;\
+		withecho dpkg-gencontrol -isp -p$$package -Pdebian/tmp-$$package; \
+	done
+	touch cpbs-install-tree
+
+cpbs-do-build:
+	@[ -f debian/process -a -f debian/rules ]
+	chmod +x debian/process
+	umask 022; debian/process build
+	touch cpbs-do-build
+
+# Build package files
+
+binary: binary-arch binary-indep
+
+binary-arch: check-root build
+	@[ -f debian/process -a -f debian/rules ]
+	@set -e; \
+	umask 022; \
+	withecho () { echo " $$@" >&2; "$$@"; }; \
+	for package in `sed -n '/^Package: /{;s/^Package: \+\([a-zA-Z0-9][a-zA-Z0-9+.-]\+\) *$$/\1/;h;};/^Architecture: .*\(any\|'\`dpkg --print-architecture\`'\)/{;g;p;}' < debian/control` ; do \
+		withecho chown -R 0.0 debian/tmp-$$package; \
+		withecho chmod -R go-ws debian/tmp-$$package; \
+		withecho debian/process finalise-$$package ROOT=debian/tmp-$$package; \
+		withecho dpkg-deb --build debian/tmp-$$package ..; \
+	done
+
+binary-indep: check-root build
+	@[ -f debian/process -a -f debian/rules ]
+	@set -e; \
+	umask 022; \
+	withecho () { echo " $$@" >&2; "$$@"; }; \
+	for package in `sed -n '/^Package: /{;s/^Package: \+\([a-zA-Z0-9][a-zA-Z0-9+.-]\+\) *$$/\1/;h;};/^Architecture: .*all/{;g;p;}' < debian/control` ; do \
+		withecho chown -R 0.0 debian/tmp-$$package; \
+		withecho chmod -R go-ws debian/tmp-$$package; \
+		withecho debian/process finalise-$$package ROOT=debian/tmp-$$package; \
+		withecho dpkg-deb --build debian/tmp-$$package ..; \
+	done
+
+check-root:
+	@[ `id -u` = 0 ] || (echo "You must be root to do this!"; false)
+
+# Clean up afterwards
+
+clean: clean-install-tree
+	@[ -f debian/process -a -f debian/rules ]
+	rm -f cpbs-do-build
+	chmod +x debian/process
+	umask 022; debian/process clean
+
+clean-install-tree:
+	@[ -f debian/process -a -f debian/rules ]
+	rm -f cpbs-install-tree
+	rm -rf debian/tmp* debian/files* debian/substvars

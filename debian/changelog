@@ -1,0 +1,23 @@
+x2x (1.27-3) unstable; urgency=low
+
+  * Remove dpkg-geninfo from debian directory and remove call to it
+    from debian/rules following debian-policy discussion on `md5sums'
+    and `du' files.
+  * Install man page under /usr/X11R6 (as pointed out by lintian).
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Fri, 20 Feb 1998 02:46:29 +0000
+
+x2x (1.27-2) unstable; urgency=low
+
+  * Updated to standards-version 2.4.0.0.  No changes required.
+  * Explain "TANSTAAFL" in copyright file.
+  * New version of my generic debian/rules.  Include dpkg-geninfo.
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Sun,  1 Feb 1998 15:43:00 +0000
+
+x2x (1.27-1) unstable; urgency=low
+
+  * First Debian release.
+  * Corrected minor buglet in man page (change \f to \fB).
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Wed,  3 Dec 1997 00:57:15 +0000

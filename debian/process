@@ -1,0 +1,23 @@
+#! /usr/bin/make -f
+
+build:
+	xmkmf -a
+	make CDEBUGFLAGS="-O2 -g"
+
+clean:
+	if test -f Makefile; then make clean; fi
+	rm -f Makefile Makefile.bak
+
+install-x2x:
+	install -d $(ROOT)/usr/X11R6/bin
+	install -s -m 755 x2x $(ROOT)/usr/X11R6/bin
+	install -d $(ROOT)/usr/X11R6/man/man1
+	install -m 644 x2x.1 $(ROOT)/usr/X11R6/man/man1
+	gzip -9n $(ROOT)/usr/X11R6/man/man?/*
+	install -d $(ROOT)/usr/doc/x2x
+	install -m 644 debian/changelog $(ROOT)/usr/doc/x2x/changelog.Debian
+	gzip -9n $(ROOT)/usr/doc/*/*
+	install -m 644 debian/copyright $(ROOT)/usr/doc/x2x
+	dpkg-shlibdeps -px2x $(ROOT)/usr/X11R6/bin/*
+
+finalise-x2x:
