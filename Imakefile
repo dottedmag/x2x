@@ -10,7 +10,7 @@ LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XLIB)
            SRCS = lawyerese.c x2x.c format.c
            OBJS = lawyerese.o x2x.o format.o
 #endif
-  PROTO_DEFINES = 
+  PROTO_DEFINES =
 
              CC = gcc
 
@@ -18,7 +18,8 @@ XCOMM Add
 XCOMM -DDEBUG for debugging printfs
 XCOMM -DDEBUGCHATTY for printfs of every Windows message
 XCOMM -DDEBUGMOUSE for printfs of every Windows mouse coordinates
- 
+
+         CFLAGS = -Wall -O2
     CDEBUGFLAGS = -O
 
 #ifdef cygwinArchitecture
