@@ -50,7 +50,7 @@ static const vncKeymapping keymap[] = {
 	{VK_CLEAR,		XK_Clear},
 	{VK_RETURN,		XK_Return},
 	{VK_LSHIFT,		XK_Shift_L},
-	{VK_RSHIFT,		XK_Shift_R},
+	{VK_RSHIFT,		XK_Shift_L}, /* XXX mdh - never gen SHIFT_R */
 	{VK_SHIFT,      XK_Shift_L},
 	{VK_LCONTROL,	XK_Control_L},
 	{VK_RCONTROL,	XK_Control_R},
@@ -163,8 +163,8 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
   }
     
   if (numkeys != 0) {
-    UINT key = kas.keycodes[numkeys-1];
 #ifdef DEBUG
+    UINT key = kas.keycodes[numkeys-1];
     printf("keymap gives %u (%x) ", key, key);
 #endif
   } else {
