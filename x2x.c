@@ -196,6 +196,9 @@ typedef struct _fakestr {
 #define COORD_DECR     -2
 #define SPECIAL_COORD(COORD) (((COORD) < 0) ? (COORD) : 0)
 
+/* max unreasonable coordinates before accepting it */
+#define MAX_UNREASONABLES 10
+
 /**********
  * display information
  **********/
@@ -214,6 +217,7 @@ typedef struct {
   int     unreasonableDelta;
 
 #ifdef WIN_2_X
+  int     unreasonableCount;
   /* From display info for Windows */
   HWND    bigwindow;
   HWND    edgewindow;
@@ -228,7 +232,7 @@ typedef struct {
   int     expectSelNotify;
   int     expectOwnClip;
   int     winSSave;
-
+  int     nXbuttons;
 #endif /* WIN_2_X */
   
   /* stuff on "to" display */
@@ -278,18 +282,23 @@ typedef int  (*HANDLER)(); /* event handler function */
 /* These prototypes need the typedefs */
 #ifdef WIN_2_X
 static void MoveWindowToEdge(PDPYINFO);
-static void MoveWindowToScreen(PDPYINFO);
+static int MoveWindowToScreen(PDPYINFO);
 static void DoWinConnect(PDPYINFO, int, int);
 static void DoWinDisconnect(PDPYINFO, int, int);
 static void SendButtonClick(PDPYINFO, int);
 LRESULT CALLBACK WinProcessMessage (HWND, UINT, WPARAM, LPARAM);
 void WinPointerEvent(PDPYINFO, int, int, DWORD, UINT);
 void WinKeyEvent(PDPYINFO, int, DWORD);
-void SendKeyEvent(PDPYINFO, KeySym, int);
+void SendKeyEvent(PDPYINFO, KeySym, int, int, int);
 
 static Bool    ProcessSelectionRequestW();
 static Bool    ProcessSelectionNotifyW();
 static Bool    ProcessSelectionClearW();
+
+#ifdef DEBUGCHATTY
+char *msgtotext(int);
+#endif
+
 #endif /* WIN_2_X */
 
 /**********
@@ -478,9 +487,10 @@ char **argv;
     if (!strcasecmp(argv[arg], "-fromWin")) {
       fromDpyName = fromWinName;
       /* XXX mdh - For now only support edge windows getting big */
-      /* Note: -east will override correctly */
+      /* Note: -east will override correctly (even if earlier on the line) */
       doBig = True;
-      doEdge = EDGE_WEST;
+      if (doEdge == EDGE_NONE) doEdge = EDGE_WEST;
+      doCapsLkHack = True;
       
 #ifdef DEBUG
       printf ("fromDpyName = %s\n", fromDpyName);
@@ -570,6 +580,11 @@ char **argv;
 #ifdef DEBUG
       printf("behavior of CapsLock will be hacked\n");
 #endif
+    } else if (!strcasecmp(argv[arg], "-nocapslockhack")) {
+      doCapsLkHack = False;
+#ifdef DEBUG
+      printf("behavior of CapsLock will not be hacked\n");
+#endif
     } else if (!strcasecmp(argv[arg], "-sticky")) {
       if (++arg >= argc) Usage();
       if ((keysym = XStringToKeysym(argv[arg])) != NoSymbol) {
@@ -629,11 +644,16 @@ static void Usage()
   printf("       -noautoup\n");
   printf("       -resurface\n");
   printf("       -capslockhack\n");
+  printf("       -nocapslockhack\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
 #ifdef WIN_2_X
   printf("WIN_2_X build allows Windows or X as -from display\n");
-  printf("Note that -fromwin sets default to -big -west\n");
+  printf("Note that -fromwin sets default to -big -west -capslockhack\n");
+  printf("A Windows shortcut of the form:\n");
+  printf("C:\\cygwin\\usr\\X11R6\\bin\\run.exe /usr/X11R6/bin/x2x -fromwin -to <to> -east\n");
+  printf("Should work to start the app from the desktop or start menu, but\n");
+  printf("c:\\cygwin\\bin may need to be added to the PATH to get cygwin1.dll\n");
 #endif 
   exit(4);
 
@@ -692,10 +712,10 @@ Display *toDpy;
 
     /* XXX mdh - This is not quite right becaue it only does To events */
     /* XXX mdh - when there are From events                            */
-    /* XXX mdh - But I think that is ok, because you don't care about  */
-    /* XXX mdh - the to when nothing is happening on the from          */
-    /* XXX mdh - One fix would be to have a ticking timer on the from  */
-
+    /* This is mostly ok, but can cause windows->X paste to take a while */
+    /* As a compromise, try a 1 second tick to cause polling */
+    
+    SetTimer(dpyInfo.bigwindow, 1, 1000 /* in ms */, NULL);
     /* GetMessage blocks until the next Windows event */
     /* It returns 0 if the app should quit */
     while (!nowQuit && GetMessage (&msg, NULL, 0, 0)) {
@@ -782,6 +802,7 @@ PDPYINFO pDpyInfo;
 
 #ifdef WIN_2_X
   gravity = NorthWestGravity;   /* keep compliler happy */
+  pDpyInfo->unreasonableCount = 0;
 
   if (fromDpy == fromWin) {
     fromWidth=GetSystemMetrics(SM_CXSCREEN);
@@ -1962,8 +1983,11 @@ PDPYINFO            pDpyInfo;
       pDpyInfo->inverseMap[buttCtr] = buttCtr;
     } /* END for */
 
+    nButtons = MIN(N_BUTTONS, XGetPointerMapping(dpy, buttonMap, N_BUTTONS));
+#ifdef WIN_2_X
+    pDpyInfo->nXbuttons = nButtons;
+#endif
     if (doPointerMap) {
-      nButtons = MIN(N_BUTTONS, XGetPointerMapping(dpy, buttonMap, N_BUTTONS));
       for (buttCtr = 0; buttCtr < nButtons; ++buttCtr) {
 #ifdef DEBUG
 	printf("button %d -> %d\n", buttCtr + 1, buttonMap[buttCtr]);
@@ -2002,31 +2026,29 @@ void MoveWindowToEdge(PDPYINFO pDpyInfo) {
   pDpyInfo->onedge=1;
 }
 
-void MoveWindowToScreen(PDPYINFO pDpyInfo)
+int MoveWindowToScreen(PDPYINFO pDpyInfo)
 {
-  if(!pDpyInfo->onedge) return;
+  int notfg;
+
+  if(!pDpyInfo->onedge) return 1;
 #ifdef DEBUG
   printf("MoveWindowToScreen\n");
 #endif
 
-#if 0
-  SetWindowPos(pDpyInfo->edgewindow, HWND_BOTTOM,
-	       (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth -1: 0,
-	       0,
-	       1,
-	       pDpyInfo->fromHeight,
-	       SWP_HIDEWINDOW | SWP_NOREDRAW);
+  if ((notfg = (SetForegroundWindow(pDpyInfo->bigwindow) == 0))) {
+#ifdef DEBUG
+    printf("Did not become foreground\n");
 #endif
-
+    return 0;
+  }
   SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
 	       0, 0,
 	       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
 	       SWP_SHOWWINDOW | SWP_NOREDRAW);
-
-  /* Really needed ? */
-  SetForegroundWindow(pDpyInfo->bigwindow);
   SetFocus(pDpyInfo->bigwindow);
+
   pDpyInfo->onedge=0;
+  return 1;
 }
 
 static void DoWinConnect(pDpyInfo, x, y)
@@ -2041,16 +2063,17 @@ int x,y;
 
   if (!pDpyInfo->onedge) return;
 
-  MoveWindowToScreen(pDpyInfo);
+  if (MoveWindowToScreen(pDpyInfo)) {
 #ifdef DEBUG
-  printf("Warp Cursor: %d,%d -> %d, %d\n",
-	 x,y,
-	 (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 2,
-	 y);
+    printf("Warp Cursor: %d,%d -> %d, %d\n",
+	   x,y,
+	   (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
+	   y);
 #endif
-  SetCursorPos((doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 2, y);
+    SetCursorPos((doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3, y);
 
-  pDpyInfo->lastFromX = (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 2;
+    pDpyInfo->lastFromX = (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3;
+  }
 }
 
 static void DoWinDisconnect(pDpyInfo, x, y)
@@ -2075,13 +2098,16 @@ int x,y;
     XFlush(pDpyInfo->toDpy);
     pDpyInfo->expectSelNotify = 1;
   }
+
+  if (x >= 0) {
 #ifdef DEBUG
-  printf("Warp Cursor: %d,%d -> %d, %d\n",
-	 x,y,
-	 (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2,
-	 y);
+    printf("Warp Cursor: %d,%d -> %d, %d\n",
+	   x,y,
+	   (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2,
+	   y);
 #endif
-  SetCursorPos((doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2, y);
+    SetCursorPos((doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2, y);
+  }
 
   MoveWindowToEdge(pDpyInfo);
   /* force normal state on to display: */
@@ -2096,7 +2122,12 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
   PDPYINFO pDpyInfo = (PDPYINFO) GetWindowLong(hwnd, GWL_USERDATA);
 
 #ifdef DEBUGCHATTY
-  if (iMsg != WM_PAINT) printf("Got msg 0x%04x\n", iMsg);
+  if (iMsg != WM_PAINT) printf("Got msg %d (0x%04x) %s %s\n", iMsg, iMsg,
+			       msgtotext(iMsg),
+			       (hwnd == NULL) ? "null" :
+			       (pDpyInfo == NULL) ? "null dpy" :
+			       (hwnd == pDpyInfo->bigwindow) ? "big" :
+			       ((hwnd == pDpyInfo->edgewindow) ? "edge" : "XX"));
 #endif
   switch (iMsg)
   {
@@ -2105,6 +2136,9 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       return 0;
 
     case WM_TIMER:
+#ifdef DEBUG
+      printf("#");
+#endif
 #if 0
       if (wParam == m_emulate3ButtonsTimer)
       {
@@ -2130,7 +2164,32 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       POINT pt;
       int x,y;
 
-      if (GetFocus() != hwnd) return 0;
+      if (GetFocus() != hwnd) {
+	if (pDpyInfo == NULL) {
+#ifdef DEBUG
+	  printf("No focus and pDpyInfo NULL\n");
+#endif
+	  return 0;
+	}
+	if (pDpyInfo->onedge) {
+#ifdef DEBUG
+	  printf("No focus and currently on edge\n");
+#endif
+	  return 0;
+	}
+	if (hwnd == pDpyInfo->bigwindow) {
+	  /* Ok, event for the bigwindow, but no focus -> take it */
+#ifdef DEBUG
+	  printf("No focus on bigwindow mouse event, grab it\n");
+#endif
+	  SetForegroundWindow(pDpyInfo->bigwindow);
+	  SetFocus(pDpyInfo->bigwindow);
+	}
+#ifdef DEBUG
+	else 
+	  printf("No focus, not on edge, not bigwindow\n");
+#endif
+      }
 
       pt.x = GET_X_LPARAM(lParam);
       pt.y = GET_Y_LPARAM(lParam);
@@ -2153,30 +2212,40 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 #endif
 	  DoWinConnect(pDpyInfo, x,y);
 	}
+	else {
+#ifdef DEBUG
+	  printf("onedge mouse move to non edge window ");
+#endif
+	  DoWinConnect(pDpyInfo, x, y);
+	}
 	return 0;
       }
 	  
       if(hwnd == pDpyInfo->bigwindow)
       {
-#if 0
-	int back=0;
-	/* To allow multi to-screens this is in subroutine */
-	switch(doEdge)
-	{
-	  case EDGE_WEST: back = (x == pDpyInfo->fromWidth-1); break;
-	  case EDGE_EAST: back = (x == 0); break;
-	}
-	    
-	if(back)
-	{
-	  Deactivate(x,y);
-	  return 0;
-	}
-#endif
-
 	WinPointerEvent(pDpyInfo, x,y, wParam, iMsg);
 
       } /* END == bigwindow */
+      if(hwnd == pDpyInfo->edgewindow)
+      {
+	int delta;
+#ifdef DEBUGMOUSE
+	printf("e(%d,%d) ", x, y);
+#endif
+	delta = pDpyInfo->lastFromX - x;
+	if (delta < 0) delta = -delta;
+	if (delta > pDpyInfo->unreasonableDelta) {
+	  /* Guess that the warp failed and try it again... */
+#ifdef DEBUG
+	  printf("Retry warp to (%d, %d)\n", 
+		 (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
+		 y);
+#endif
+	  SetCursorPos((doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3, y);
+	}
+	//WinPointerEvent(pDpyInfo, x,y, wParam, iMsg);
+
+      } /* END == edgewindow */
 
       return 0;
     }
@@ -2450,6 +2519,9 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 #endif
       return;
     }
+#ifdef DEBUGMOUSE
+    printf("m(%d, %d) ", x,y);
+#endif
     /* find the screen */
     toScreenNum = pDpyInfo->toScreen;
     fromX = x;
@@ -2459,7 +2531,19 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
     /* sanity check motion: necessary for nondeterminism surrounding warps */
     delta = pDpyInfo->lastFromX - fromX;
     if (delta < 0) delta = -delta;
-    if (delta > pDpyInfo->unreasonableDelta) return;
+    if (delta > pDpyInfo->unreasonableDelta) {
+      if (pDpyInfo->unreasonableCount++ < MAX_UNREASONABLES) {
+#ifdef DEBUG
+	printf("Unreasonable x delta last = %d this = %d\n", 
+	       pDpyInfo->lastFromX, fromX);
+#endif
+	return;
+      }
+      pDpyInfo->unreasonableCount = 0;
+#ifdef DEBUG
+      printf("Too many unreasonable deltas to really be unreasonable!\n");
+#endif
+    }
 
     if (SPECIAL_COORD(toX) != 0) { /* special coordinate */
       if (toX == COORD_INCR) {
@@ -2468,6 +2552,9 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 	  fromX = pDpyInfo->fromXIncr;
 	  toX = pDpyInfo->xTables[toScreenNum][fromX];
 	} else { /* disconnect! */
+#ifdef DEBUG
+	  printf("INCR screen %d: ", toScreenNum);
+#endif 
 	  DoWinDisconnect(pDpyInfo, x, y);
 	  fromX = pDpyInfo->fromXDisc;
 	  toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
@@ -2478,6 +2565,9 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 	  fromX = pDpyInfo->fromXDecr;
 	  toX = pDpyInfo->xTables[toScreenNum][fromX];
 	} else { /* disconnect! */
+#ifdef DEBUG
+	  printf("DECR screen %d: ", toScreenNum);
+#endif 
 	  DoWinDisconnect(pDpyInfo, x, y);
 	  fromX = pDpyInfo->fromXDisc;
 	  toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
@@ -2486,9 +2576,6 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
     } /* END if SPECIAL_COORD */
     pDpyInfo->lastFromX = fromX;
     pDpyInfo->lastFromY = fromY;
-#ifdef DEBUGMOUSE
-    printf("m(%d, %d) ", toX, pDpyInfo->yTables[toScreenNum][y]);
-#endif
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
       XTestFakeMotionEvent(pShadow->dpy, toScreenNum, toX,
 			   pDpyInfo->yTables[toScreenNum][y], 0);
@@ -2534,15 +2621,21 @@ void SendButtonClick(pDpyInfo, button)
 
   if (button <= N_BUTTONS) {
     toButton = pDpyInfo->inverseMap[button];
-    for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-      XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
-      XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
+    if (toButton <= pDpyInfo->nXbuttons)
+      for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+	XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
+	XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
 #ifdef DEBUG
-      printf("Click from button %d, to button %d\n", 
-	     button, toButton);
+	printf("Click from button %d, to button %d\n", 
+	       button, toButton);
 #endif
-      XFlush(pShadow->dpy);
-    } /* END for */
+	XFlush(pShadow->dpy);
+      } /* END for */
+#ifdef DEBUG
+    else
+      printf("to only has %d buttons, cant clikc from %d -> to %d\n",
+	     pDpyInfo->nXbuttons, button, toButton);
+#endif
   }
 }
 
@@ -2587,6 +2680,7 @@ DWORD keyData;
   KeyActionSpec kas;
   int down = ((keyData & 0x80000000l) == 0);
   int i;
+  int winShift = 0;
 
   // if virtkey found in mapping table, send X equivalent
   // else
@@ -2599,42 +2693,74 @@ DWORD keyData;
 
 #ifdef DEBUG
   if (GetKeyNameText(  keyData,keyname, 31)) {
-    printf("Process key: %s (keyData %04x): ", keyname, (unsigned int)keyData);
+    printf("Process key: %s (vk %d keyData %04x): ", keyname, virtkey, (unsigned int)keyData);
   };
 #endif
 
+  if (doCapsLkHack && (virtkey == VK_CAPITAL)) {
+    /* We rely on Windows to process Caps Lock so don't send to X */
+#ifdef DEBUG
+    printf(" Ignore Caps Lock\n");
+#endif
+    return;
+  }
+
+  /* Special cases */
+  if ((virtkey == VK_HOME) || (virtkey == VK_END)) {
+    if (GetKeyState(VK_RMENU) & 0x8000) { // right ALT down
+#ifdef DEBUG
+      printf("Magic key \n");
+#endif
+      SendKeyEvent(pDpyInfo, XK_Alt_R, False, False, 0);
+      if (virtkey == VK_END)
+	exit(0); // Is there a proper way?
+      
+      DoWinDisconnect(pDpyInfo, -1, -1);
+      return;
+    }
+  }	
+
   kas = PCtoX(virtkey, keyData);    
-  
+
   if (kas.releaseModifiers & KEYMAP_LCONTROL) {
-    SendKeyEvent(pDpyInfo, XK_Control_L, False );
+    SendKeyEvent(pDpyInfo, XK_Control_L, False, False, 0);
 #ifdef DEBUG
     printf("fake L Ctrl raised\n");
 #endif
   }
 
   if (kas.releaseModifiers & KEYMAP_LALT) {
-    SendKeyEvent(pDpyInfo, XK_Alt_L, False );
+    SendKeyEvent(pDpyInfo, XK_Alt_L, False, False, 0);
 #ifdef DEBUG
     printf("fake L Alt raised\n");
 #endif
   }
 
   if (kas.releaseModifiers & KEYMAP_RCONTROL) {
-    SendKeyEvent(pDpyInfo, XK_Control_R, False );
+    SendKeyEvent(pDpyInfo, XK_Control_R, False, False, 0);
 #ifdef DEBUG
     printf("fake R Ctrl raised\n");
 #endif
   }
 
   if (kas.releaseModifiers & KEYMAP_RALT) {
-    SendKeyEvent(pDpyInfo, XK_Alt_R, False );
+    SendKeyEvent(pDpyInfo, XK_Alt_R, False, False, 0);
 #ifdef DEBUG
     printf("fake R Alt raised\n");
 #endif
   }
 
+  /* NOTE: confusingly the 'keycodes' array actually contains keysyms */
+
+  if (doCapsLkHack) {   /* Arguably this should be the dafault */
+    winShift = (((GetKeyState(VK_LSHIFT) & 0x8000) ? 1 : 0) |
+		((GetKeyState(VK_RSHIFT) & 0x8000) ? 2 : 0));
+#ifdef DEBUG
+    printf(" winShift %d ", winShift);
+#endif
+  }
   for (i = 0; kas.keycodes[i] != XK_VoidSymbol && i < MaxKeysPerKey; i++) {
-      SendKeyEvent(pDpyInfo, kas.keycodes[i], down );
+    SendKeyEvent(pDpyInfo, kas.keycodes[i], down, doCapsLkHack, winShift);
 #ifdef DEBUG
       printf("Sent keysym %04x (%s)\n", 
 	     (int)kas.keycodes[i], down ? "press" : "release");
@@ -2642,28 +2768,28 @@ DWORD keyData;
   }
 
   if (kas.releaseModifiers & KEYMAP_RALT) {
-    SendKeyEvent(pDpyInfo, XK_Alt_R, True );
+    SendKeyEvent(pDpyInfo, XK_Alt_R, True, False, 0);
 #ifdef DEBUG
     printf("fake R Alt pressed\n");
 #endif
   }
 
   if (kas.releaseModifiers & KEYMAP_RCONTROL) {
-    SendKeyEvent(pDpyInfo, XK_Control_R, True );
+    SendKeyEvent(pDpyInfo, XK_Control_R, True, False, 0);
 #ifdef DEBUG
     printf("fake R Ctrl pressed\n");
 #endif
   }
 
   if (kas.releaseModifiers & KEYMAP_LALT) {
-    SendKeyEvent(pDpyInfo, XK_Alt_L, False );
+    SendKeyEvent(pDpyInfo, XK_Alt_L, False, False, 0);
 #ifdef DEBUG
     printf("fake L Alt pressed\n");
 #endif
   }
 
   if (kas.releaseModifiers & KEYMAP_LCONTROL) {
-    SendKeyEvent(pDpyInfo, XK_Control_L, False );
+    SendKeyEvent(pDpyInfo, XK_Control_L, False, False, 0);
 #ifdef DEBUG
     printf("fake L Ctrl pressed\n");
 #endif
@@ -2674,17 +2800,98 @@ DWORD keyData;
 // SendKeyEvent
 //
 
-void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down)
+/* Note implementation of capsLockHack is different from X version */
+/* This version should also catch the case of keys that are shifted on from */
+/* but unshifted on to. Eg '<' above comma on from, going to '>' above '<' */
+void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down, 
+		  int chkShift, int winShift)
 {
   KeyCode keycode;
   PSHADOW   pShadow;
+  int invShift;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    //    toShiftCode = XKeysymToKeycode(pShadow->dpy, XK_Shift_L);
     if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
-      // if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, True, 0);
-      XTestFakeKeyEvent(pShadow->dpy, keycode, down, 0);
-      //if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, False, 0);
+      invShift = 0;
+      if (chkShift && (keysym != XK_Shift_R) && (keysym != XK_Shift_L)) {
+	/* Check that the shift key matches where the keysym is */
+	if (XKeycodeToKeysym(pShadow->dpy, keycode, winShift ? 1:0) != keysym){
+	  /* Ok, key does not match with current shift */
+	  if (XKeycodeToKeysym(pShadow->dpy,keycode,winShift ? 0:1) == keysym){
+	    /* But does with shift inverted */
+	    invShift = 1;
+#ifdef DEBUG
+	    printf("Invert shift ");
+#endif
+	  }
+#ifdef DEBUG
+	  else
+	    printf(" keysym not keycode 0 or 1 hope for the best ");
+#endif
+	}
+      }
+
+      /* XXX mdh -- As far as I can tell we will never generate RSHIFT */
+      /* Windows reports virtkey=SHIFT for both types which sends      */
+      /* left shift to X. The code here is simpler taking advantage    */
+      /* of this. But I had already written the general case, and if   */
+      /* PCtoX is fixed to use both shifts, then you need to define    */
+      /* USING_RSHIFT  */
+
+      if (invShift) {
+	KeyCode toShiftLCode = XKeysymToKeycode(pShadow->dpy, XK_Shift_L);
+#ifdef USING_RSHIFT
+	KeyCode toShiftRCode = XKeysymToKeycode(pShadow->dpy, XK_Shift_R);
+#endif
+	/* XXX mdh - Would it be better to only mess with shifts on down */
+	/* XXX mdh - and only restore on up? */
+
+	if (winShift == 0) { // Need to press, choose left
+	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, True, 0);
+#ifdef DEBUG
+	  printf("LSdown ");
+#endif
+	} else {
+	  // Release whichever is pressed or both
+#ifdef USING_RSHIFT
+	  if (winShift & 1) {
+	    	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, False, 0);
+#ifdef DEBUG
+		  printf("LSup ");
+#endif
+	  }
+	  if (winShift & 2) {
+	    	  XTestFakeKeyEvent(pShadow->dpy, toShiftRCode, False, 0);
+#ifdef DEBUG
+		  printf("RSup ");
+#endif
+	  }
+#else /* not USING_RSHIFT */
+	  /* Since we only ever send Left shifts, thats all we need release */
+	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, False, 0);
+#ifdef DEBUG
+	  printf("LSup ");
+#endif
+#endif /* USING_RSHIFT */
+	}
+	XTestFakeKeyEvent(pShadow->dpy, keycode, down, 0);
+	if (winShift == 0) // Needed to press, so release
+	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, False, 0);
+	else {
+#ifdef USING_RSHIFT
+	  // Restore whichever is pressed
+	  if (winShift & 1)
+	    	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, True, 0);
+	  if (winShift & 2)
+	    	  XTestFakeKeyEvent(pShadow->dpy, toShiftRCode, True, 0);
+#else /* not USING_RSHIFT */
+	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, True, 0);
+#endif /* USING_RSHIFT */
+	}
+      }
+      else
+	XTestFakeKeyEvent(pShadow->dpy, keycode, down, 0);
+      
       XFlush(pShadow->dpy);
     } /* END if */
   } /* END for */
