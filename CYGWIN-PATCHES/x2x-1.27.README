@@ -1,0 +1,37 @@
+Building this package is a snap.
+
+
+Download the src here:
+
+ http://ftp.digital.com/pub/Digital/SRC/x2x/x2x-1.27.tar.gz
+
+
+
+Unpack it thus:
+
+ cat x2x-1.27.tar.gz | gunzip | tar xvf -
+
+
+
+Patch it for Cygwin thus:
+
+ patch -p0 < x2x-1.27-1.patch
+
+
+
+Build it thus:
+
+ cd x2x-1.27
+ xmkmf
+ make x2x.exe
+
+ [Note: Running "make all" will build the binary just fine, but will bomb
+        when it tries to make a man page.  That's because they didn't
+        include man page source, just the man page itself]
+
+
+
+Install it thus:
+
+ cp x2x.exe /usr/X11R6/bin
+ cp x2x.1 /usr/X11R6/man/man1

@@ -1,0 +1,28 @@
+XCOMM $XConsortium: Imakefile,v 1.5 91/07/17 16:07:10 gildea Exp $
+        DEPLIBS = $(DEPXTESTLIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+
+#ifdef cygwinArchitecture
+LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XLIB) -luser32 -lgdi32
+           SRCS = lawyerese.c x2x.c format.c keymap.c winmsg.c
+           OBJS = lawyerese.o x2x.o format.o keymap.o winmsg.o x2xwin.res
+#else
+LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XLIB)
+           SRCS = lawyerese.c x2x.c format.c
+           OBJS = lawyerese.o x2x.o format.o
+#endif
+  PROTO_DEFINES = 
+
+             CC = gcc
+
+XCOMM Add
+XCOMM -DDEBUG for debugging printfs
+XCOMM -DDEBUGCHATTY for printfs of every Windows message
+XCOMM -DDEBUGMOUSE for printfs of every Windows mouse coordinates
+ 
+    CDEBUGFLAGS = -O
+
+#ifdef cygwinArchitecture
+    EXTRA_DEFINES = -DWIN_2_X
+ResourceObjectRule(x2xwin, nocursor.cur resource.h,)
+#endif
+ComplexProgramTarget(x2x)

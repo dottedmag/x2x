@@ -1,0 +1,6 @@
+sdesc: "Combines 2 independent X sessions into a single, multi-headed X session"
+ldesc: "Combines 2 independent X sessions into a single, multi-headed X session.
+Each X session can be running on a different machine, can have different
+resolutions, color depths, and even different window managers."
+category: XFree86
+requires: cygwin XFree86-xserv XFree86-base
