@@ -197,6 +197,8 @@ typedef struct _fakestr {
 
 #define N_BUTTONS   5
 
+#define MAX_BUTTONMAPEVENTS 20
+
 #define GETDPYXTRA(DPY,PDPYINFO)\
    (((DPY) == (PDPYINFO)->fromDpy) ?\
     &((PDPYINFO)->fromDpyXtra) : &((PDPYINFO)->toDpyXtra))
@@ -342,7 +344,9 @@ static Bool    doPointerMap = True;
 static PSTICKY stickies     = NULL;
 static Bool    doBtnBlock   = False;
 static Bool    doCapsLkHack = False;
-static Bool    doClipCheck = False;
+static Bool    doClipCheck  = False;
+static int     nButtons     = 0;
+static KeySym  buttonmap[N_BUTTONS + 1][MAX_BUTTONMAPEVENTS + 1];
 
 #ifdef WIN_2_X
 /* These are used to allow pointer comparisons */
@@ -496,10 +500,17 @@ char **argv;
   extern  char *lawyerese;
   PSTICKY pNewSticky;
   KeySym  keysym;
+  int     button;
+  int     eventno;
+  char    *keyname, *argptr;
 
 #ifdef DEBUG
   printf ("programStr = %s\n", programStr);
 #endif
+
+  /* Clear button map */
+  for (button = 0; button <= N_BUTTONS; button++)
+      buttonmap[button][0] = NoSymbol;
 
   for (arg = 1; arg < argc; ++arg) {
 #ifdef WIN_2_X
@@ -632,6 +643,34 @@ char **argv;
       } else {
 	printf("x2x: warning: can't translate %s\n", argv[arg]);
       }
+    } else if (!strcasecmp(argv[arg], "-buttonmap")) {
+	if (++arg >= argc) Usage();
+	button = atoi(argv[arg]);
+
+	if ((button < 1) || (button > N_BUTTONS))
+	    printf("x2x: warning: invalid button %d\n", button);
+	else if (++arg >= argc)
+	    Usage();
+	else
+	{
+#ifdef DEBUG
+	    printf("will map button %d to keysyms '%s'\n", button, argv[arg]);
+#endif
+	    argptr  = argv[arg];
+	    eventno = 0;
+	    while ((keyname = strtok(argptr, " \t\n\r")) != NULL)
+	    {
+		if ((keysym = XStringToKeysym(keyname)) == NoSymbol)
+		    printf("x2x: warning: can't translate %s\n", keyname);
+		else if (eventno + 1 >= MAX_BUTTONMAPEVENTS)
+		    printf("x2x: warning: too many keys mapped to button %d\n",
+			   button);
+		else
+		    buttonmap[button][eventno++] = keysym;
+		argptr = NULL;
+	    }
+	    buttonmap[button][eventno] = NoSymbol;
+	}
     } else if (!strcasecmp(argv[arg], "-resurface")) {
       doResurface = True;
 #ifdef DEBUG
@@ -672,6 +711,7 @@ static void Usage()
   printf("       -big\n");
   printf("       -buttonblock\n");
   printf("       -nomouse\n");
+  printf("       -nopointermap\n");
   printf("       -north\n");
   printf("       -south\n");
   printf("       -east\n");
@@ -684,6 +724,7 @@ static void Usage()
   printf("       -clipcheck\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
+  printf("       -buttonmap <button#> \"<keysym> ...\"\n");
 #ifdef WIN_2_X
   printf("WIN_2_X build allows Windows or X as -from display\n");
   printf("Note that -fromwin sets default to -big -west -capslockhack\n");
@@ -1553,6 +1594,10 @@ XButtonEvent *pEv;
   PSHADOW   pShadow;
   unsigned int toButton;
 
+  KeySym  keysym;
+  KeyCode keycode;
+  int     eventno;
+
   switch (pDpyInfo->mode) {
   case X2X_DISCONNECTED:
     pDpyInfo->mode = X2X_AWAIT_RELEASE;
@@ -1561,28 +1606,70 @@ XButtonEvent *pEv;
 #endif
     break;
   case X2X_CONNECTED:
-    if (pEv->button <= N_BUTTONS) {
-      toButton = pDpyInfo->inverseMap[pEv->button];
-      for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-	XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
+/*     if (pEv->button <= N_BUTTONS) { */
+/*       toButton = pDpyInfo->inverseMap[pEv->button]; */
+/*       for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) { */
+/* 	XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0); */
+/* #ifdef DEBUG */
+/* 	printf("from button %d down, to button %d down\n", pEv->button,toButton); */
+/* #endif */
+/* 	XFlush(pShadow->dpy); */
+/*       } /\* END for *\/ */
+/*       if (doAutoUp) */
+/* 	FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True); */
+/*       if (doEdge) break; */
+/*     } */
+      if ((pEv->button <= N_BUTTONS) &&
+	  (buttonmap[pEv->button][0] != NoSymbol))
+      {
+	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
+	  {
 #ifdef DEBUG
-	printf("from button %d down, to button %d down\n", pEv->button,toButton);
+	      printf("Button %d is mapped, sending keys: ", pEv->button);
 #endif
-	XFlush(pShadow->dpy);
-      } /* END for */
-      if (doAutoUp)
-	FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True);
+	      for (eventno = 0;
+		   (keysym = buttonmap[pEv->button][eventno]) != NoSymbol;
+		   eventno++)
+	      {
+		  if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
+		      XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+		      XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+		      XFlush(pShadow->dpy);
+#ifdef DEBUG
+		      printf(" (0x%04X)", keycode);
+#endif
+		  }
+#ifdef DEBUG
+		  else
+		      printf(" (no code)");
+#endif
+	      }
+#ifdef DEBUG
+	      printf("\n");
+#endif
+	  }
+      } else if (pEv->button <= nButtons) {
+	  toButton = pDpyInfo->inverseMap[pEv->button];
+	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+	      XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
+#ifdef DEBUG
+		printf("from button %d down, to button %d down\n", pEv->button,toButton);
+#endif
+		XFlush(pShadow->dpy);
+	  } /* END for */
+	  if (doAutoUp)
+	      FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True);
+      }
       if (doEdge) break;
-    }
 
-    /* check if more than one button pressed */
-    state = pEv->state;
-    switch (pEv->button) {
-    case Button1: state &= ~Button1Mask; break;
-    case Button2: state &= ~Button2Mask; break;
-    case Button3: state &= ~Button3Mask; break;
-    case Button4: state &= ~Button4Mask; break;
-    case Button5: state &= ~Button5Mask; break;
+      /* check if more than one button pressed */
+      state = pEv->state;
+      switch (pEv->button) {
+      case Button1: state &= ~Button1Mask; break;
+      case Button2: state &= ~Button2Mask; break;
+      case Button3: state &= ~Button3Mask; break;
+      case Button4: state &= ~Button4Mask; break;
+      case Button5: state &= ~Button5Mask; break;
     default:
 #ifdef DEBUG
       printf("unknown button %d\n", pEv->button);
@@ -1612,18 +1699,21 @@ XButtonEvent *pEv;
 
   if ((pDpyInfo->mode == X2X_CONNECTED) ||
       (pDpyInfo->mode == X2X_CONN_RELEASE)) {
-    if (pEv->button <= N_BUTTONS) {
-      toButton = pDpyInfo->inverseMap[pEv->button];
-      for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-	XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
+      if ((pEv->button <= nButtons) &&
+	  (buttonmap[pEv->button][0] == NoSymbol))
+	  // Do not process button release if it was mapped to keys
+      {
+	  toButton = pDpyInfo->inverseMap[pEv->button];
+	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+		XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
 #ifdef DEBUG
-	printf("from button %d up, to button %d up\n", pEv->button, toButton);
+		printf("from button %d up, to button %d up\n", pEv->button, toButton);
 #endif
-	XFlush(pShadow->dpy);
-      } /* END for */
-      if (doAutoUp)
-	FakeAction(pDpyInfo, FAKE_BUTTON, toButton, False);
-    }
+		XFlush(pShadow->dpy);
+	  } /* END for */
+	  if (doAutoUp)
+	      FakeAction(pDpyInfo, FAKE_BUTTON, toButton, False);
+      }
   } /* END if */
 
   if (doEdge) return False;
