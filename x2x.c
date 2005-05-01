@@ -124,6 +124,9 @@
 static void    ParseCommandLine();
 static Display *OpenAndCheckDisplay();
 static Bool    CheckTestExtension();
+#ifndef WIN_2_X
+static int     ErrorHandler();
+#endif
 static void    DoX2X();
 static void    InitDpyInfo();
 static void    DoConnect();
@@ -443,7 +446,13 @@ char **argv;
     if (!(pShadow->dpy = OpenAndCheckDisplay(pShadow->name)))
       exit(3);
 
-  /* run the x2x loop */
+#ifndef WIN_2_X
+  /* set error handler,
+     so that program does not abort on non-critcal errors */
+  XSetErrorHandler(ErrorHandler);
+#endif
+
+    /* run the x2x loop */
   DoX2X(fromDpy, shadows->dpy);
 
   /* shut down gracefully */
@@ -749,6 +758,24 @@ Display  *dpy;
   return (XTestQueryExtension(dpy, &eventb, &errorb, &vmajor, &vminor));
 
 } /* END CheckTestExtension */
+
+#ifndef WIN_2_X
+int ErrorHandler(Display *disp, XErrorEvent *event) {
+
+  int bufflen = 1024;
+  char *buff;
+  buff = malloc(bufflen);
+
+  XGetErrorText(disp,event->error_code,buff,bufflen);
+#ifdef DEBUG
+  printf("x2x:ErrHandler(): Display:`%s` \t error_code:`%i` \n",
+       XDisplayName(NULL),event->error_code);
+#endif
+  printf(" %s \n",buff);
+  free(buff);
+  return True;
+}
+#endif
 
 #define X2X_DISCONNECTED    0
 #define X2X_AWAIT_RELEASE   1
