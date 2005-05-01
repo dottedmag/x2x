@@ -1606,19 +1606,6 @@ XButtonEvent *pEv;
 #endif
     break;
   case X2X_CONNECTED:
-/*     if (pEv->button <= N_BUTTONS) { */
-/*       toButton = pDpyInfo->inverseMap[pEv->button]; */
-/*       for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) { */
-/* 	XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0); */
-/* #ifdef DEBUG */
-/* 	printf("from button %d down, to button %d down\n", pEv->button,toButton); */
-/* #endif */
-/* 	XFlush(pShadow->dpy); */
-/*       } /\* END for *\/ */
-/*       if (doAutoUp) */
-/* 	FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True); */
-/*       if (doEdge) break; */
-/*     } */
       if ((pEv->button <= N_BUTTONS) &&
 	  (buttonmap[pEv->button][0] != NoSymbol))
       {
