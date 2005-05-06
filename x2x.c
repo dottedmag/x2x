@@ -90,7 +90,6 @@
 #include <X11/Xos.h>
 #include <X11/extensions/XTest.h>
 #include <X11/keysym.h>
-#include "format.h"
 
 #ifdef WIN_2_X
 #include <windows.h>
@@ -157,25 +156,6 @@ static void    Usage();
 
 
 /**********
- * text formatting instructions
- **********/
-#define toDpyFormatLength (sizeof(toDpyFormat) / sizeof(Format))
-static Format toDpyFormat[] = {
-  FormatMeasureText,
-  FormatSetLeft,      0,
-  FormatSetTop,       0,
-  FormatAddHalfTextX, 1,
-  FormatAddHalfTextY, 3,
-  FormatString, (Format)"unknown",
-  FormatAddHalfTextX, 1,
-  FormatAddHalfTextY, 1
-  };
-/* indexes of values to be filled in at runtime */
-#define toDpyLeftIndex    2
-#define toDpyTopIndex     4
-#define toDpyStringIndex 10
-
-/**********
  * stuff for selection forwarding
  **********/
 typedef struct _dpyxtra {
@@ -231,8 +211,8 @@ typedef struct {
   GC      textGC;
   Atom    wmpAtom, wmdwAtom;
   Cursor  grabCursor;
-  XFS     *font;
-  int     twidth, theight;
+  Font    fid;
+  int     width, height, twidth, theight, tascent;
   Bool    vertical;
   int     lastFromCoord;
   int     unreasonableDelta;
@@ -332,6 +312,7 @@ static char    *fromDpyName = NULL;
 static char    *toDpyName   = NULL;
 static char    *defaultFN   = "-*-times-bold-r-*-*-*-180-*-*-*-*-*-*";
 static char    *fontName    = "-*-times-bold-r-*-*-*-180-*-*-*-*-*-*";
+static char    *label       = NULL;
 static char    *pingStr     = "PING"; /* atom for ping request */
 static char    *geomStr     = NULL;
 static Bool    waitDpy      = False;
@@ -558,6 +539,13 @@ char **argv;
 #ifdef DEBUG
       printf ("fontName = %s\n", fontName);
 #endif
+    } else if (!strcasecmp(argv[arg], "-label")) {
+      if (++arg >= argc) Usage();
+      label = argv[arg];
+
+#ifdef DEBUG
+      printf ("label = %s\n", label);
+#endif
     } else if (!strcasecmp(argv[arg], "-geometry")) {
       if (++arg >= argc) Usage();
       geomStr = argv[arg];
@@ -733,6 +721,7 @@ static void Usage()
   printf("       -clipcheck\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
+  printf("       -label <LABEL>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
 #ifdef WIN_2_X
   printf("WIN_2_X build allows Windows or X as -from display\n");
@@ -884,7 +873,7 @@ PDPYINFO pDpyInfo;
   int       *heights, *widths;
   int       counter;
   int       nScreens, screenNum;
-  int       twidth, theight; /* text dimensions */
+  int       twidth, theight, tascent; /* text dimensions */
   int       xoff, yoff; /* window offsets */
   unsigned int width, height; /* window width, height */
   int       geomMask;		/* mask returned by parse */
@@ -896,7 +885,7 @@ PDPYINFO pDpyInfo;
   int       eventMask;
   GC        textGC;
   char      *windowName;
-  XFS       *font;
+  Font      fid;
   PSHADOW   pShadow;
   int       triggerLoc;
   Bool      vertical;
@@ -1097,25 +1086,31 @@ PDPYINFO pDpyInfo;
 #ifdef WIN_2_X
     }
 #endif
-    font = NULL;
-
+    fid = 0;
   } else { /* normal window for text: do size grovelling */
     pDpyInfo->grabCursor = XCreateFontCursor(fromDpy, XC_exchange);
     eventMask |= StructureNotifyMask | ExposureMask;
     if (doMouse) eventMask |= ButtonPressMask | ButtonReleaseMask;
 
+    if (label == NULL)
+      label = toDpyName;
     /* determine size of text */
-    if (((font = XLoadQueryFont(fromDpy, fontName)) != NULL) ||
-	((font = XLoadQueryFont(fromDpy, defaultFN)) != NULL) ||
-	((font = XLoadQueryFont(fromDpy, "fixed")) != NULL)) {
+	if (((fid = XLoadFont(fromDpy, fontName)) != 0) ||
+		((fid = XLoadFont(fromDpy, defaultFN)) != 0) ||
+		((fid = XLoadFont(fromDpy, "fixed")) != 0)) {
       /* have a font */
-      toDpyFormat[toDpyStringIndex] = (Format)toDpyName;
-      formatText(NULL, NULL, NULL, font,
-		 toDpyFormatLength, toDpyFormat, &twidth, &theight);
+      int ascent, descent, direction;
+      XCharStruct overall;
+
+      XQueryTextExtents(fromDpy, fid, label, strlen(label),
+                        &direction, &ascent, &descent, &overall);
+      twidth = -overall.lbearing + overall.rbearing;
+      theight = ascent + descent;
+      tascent = ascent;
 
       textGC = pDpyInfo->textGC = XCreateGC(fromDpy, root, 0, NULL);
       XSetState(fromDpy, textGC, black, white, GXcopy, AllPlanes);
-      XSetFont(fromDpy, textGC, font->fid);
+      XSetFont(fromDpy, textGC, fid);
 
     } else { /* should not have to execute this clause: */
       twidth = theight = 100; /* default window size */
@@ -1123,8 +1118,8 @@ PDPYINFO pDpyInfo;
 
     /* determine size of window */
     xoff = yoff = 0;
-    width = twidth;
-    height = theight;
+    width = twidth + 4; /* XXX gap around text -- should be configurable */
+    height = theight + 4;
     geomMask = XParseGeometry(geomStr, &xoff, &yoff, &width, &height);
     switch (gravMask = (geomMask & (XNegative | YNegative))) {
     case (XNegative | YNegative): gravity = SouthEastGravity; break;
@@ -1312,15 +1307,18 @@ PDPYINFO pDpyInfo;
   pDpyInfo->eventMask = eventMask; /* save for future munging */
   if (doSel) XSetSelectionOwner(fromDpy, XA_PRIMARY, trigger, CurrentTime);
   XMapRaised(fromDpy, trigger);
-  if ((pDpyInfo->font = font)) { /* paint text */
+  if ((pDpyInfo->fid = fid)) { /* paint text */
     /* position text */
     pDpyInfo->twidth = twidth;
     pDpyInfo->theight = theight;
-    toDpyFormat[toDpyLeftIndex] = MAX(0,((width - twidth) / 2));
-    toDpyFormat[toDpyTopIndex]  = MAX(0,((height - theight) / 2));
+    pDpyInfo->tascent = tascent;
+    pDpyInfo->width = width;
+    pDpyInfo->height = height;
 
-    formatText(fromDpy, trigger, &(textGC), font,
-	       toDpyFormatLength, toDpyFormat, NULL, NULL);
+    XDrawImageString(fromDpy, trigger, textGC,
+                     MAX(0, ((width - twidth) / 2)),
+                     MAX(0, ((height - theight) / 2)) + tascent,
+                     label, strlen(label));
   } /* END if font */
 #ifdef WIN_2_X
   }
@@ -1575,10 +1573,12 @@ PDPYINFO pDpyInfo;
 XExposeEvent *pEv;
 {
   XClearWindow(pDpyInfo->fromDpy, pDpyInfo->trigger);
-  if (pDpyInfo->font)
-    formatText(pDpyInfo->fromDpy, pDpyInfo->trigger,
-	       &(pDpyInfo->textGC), pDpyInfo->font,
-	       toDpyFormatLength, toDpyFormat, NULL, NULL);
+  if (pDpyInfo->fid)
+    XDrawImageString(pDpyInfo->fromDpy, pDpyInfo->trigger, pDpyInfo->textGC,
+		     MAX(0,((pDpyInfo->width - pDpyInfo->twidth) / 2)),
+		     MAX(0,((pDpyInfo->height - pDpyInfo->theight) / 2)) +
+		     pDpyInfo->tascent, label, strlen(label));
+
   return False;
 
 } /* END ProcessExpose */
@@ -1837,12 +1837,10 @@ Display  *dpy;
 PDPYINFO pDpyInfo;
 XConfigureEvent *pEv;
 {
-  if (pDpyInfo->font) {
+  if (pDpyInfo->fid) {
     /* reposition text */
-    toDpyFormat[toDpyLeftIndex] =
-      MAX(0,((pEv->width - pDpyInfo->twidth) / 2));
-    toDpyFormat[toDpyTopIndex]  =
-      MAX(0,((pEv->height - pDpyInfo->theight) / 2));
+    pDpyInfo->width = pEv->width;
+    pDpyInfo->height = pEv->height;
   } /* END if font */
   return False;
 

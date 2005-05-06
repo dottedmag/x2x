@@ -149,7 +149,7 @@ cursor will not slide back onto the "from" display when one or more
 mouse buttons are pressed.
 .TP
 .B \-buttonmap \fIbutton#\fP \fR"\fP\fIKeySym ...\fP\fR"\fP
-.IP 
+.IP
 Map a mouse button to one or more keyboard events on the "to" display.
 This is useful if you have a mouse with more buttons than the remote X
 server can handle (e.g. a wheel mouse on a PC, merged with a Sun/Sparc
@@ -222,6 +222,10 @@ key only seems to work on every other press, try this option.  The
 sticky option prevents autoup for the specified key.  Look in
 /usr/include/X11/keysymdef.h for a list of valid names of keys
 (remove the leading XK_).
+.TP
+.B \-label \fIlabel\fP
+Override the title of the control window (useful when running over ssh).
+.IP
 .TP
 .B \-copyright
 .IP
