@@ -1633,9 +1633,15 @@ XButtonEvent *pEv;
 #endif
     break;
   case X2X_CONNECTED:
+#ifdef DEBUG
+	  printf("Got button %d, max is %d (%d)\n", pEv->button, N_BUTTONS, nButtons);
+#endif
       if ((pEv->button <= N_BUTTONS) &&
 	  (buttonmap[pEv->button][0] != NoSymbol))
       {
+#ifdef DEBUG
+		  printf("Mapped!\n");
+#endif
 	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
 	  {
 #ifdef DEBUG
@@ -2165,7 +2171,6 @@ PDPYINFO            pDpyInfo;
 {
   unsigned int buttCtr;
   unsigned char buttonMap[N_BUTTONS];
-  int nButtons;
 
   if (dpy == pDpyInfo->toDpy) { /* only care about toDpy */
     /* straightforward mapping */
@@ -2174,6 +2179,9 @@ PDPYINFO            pDpyInfo;
     } /* END for */
 
     nButtons = MIN(N_BUTTONS, XGetPointerMapping(dpy, buttonMap, N_BUTTONS));
+#ifdef DEBUG
+	printf("got button mapping: %d items\n", nButtons);
+#endif
 #ifdef WIN_2_X
     pDpyInfo->nXbuttons = nButtons;
 #endif
