@@ -92,12 +92,23 @@
 #include <X11/keysym.h>
 
 #ifdef WIN_2_X
+#define _WIN32_WINNT 0x0500
 #include <windows.h>
 #include <windowsx.h>
 #include <assert.h>
 #include "keymap.h"
 #include "resource.h"
+
+#define X2X_MSG_HOTKEY (WM_USER + 1)
+
+#define DPMSModeOn	0
+extern Status DPMSForceLevel(Display *, unsigned short);
+#else
+#include <X11/extensions/dpms.h>
 #endif
+
+
+
 
 /*#define DEBUG*/
 
@@ -107,6 +118,8 @@
 #ifndef MAX
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 #endif
+
+#define UTF8_STRING "UTF8_STRING"
 
 /**********
  * definitions for edge
@@ -205,6 +218,7 @@ typedef struct _fakestr {
 typedef struct {
   /* stuff on "from" display */
   Display *fromDpy;
+  Atom    fromDpyUtf8String;
   Window  root;
   Window  trigger;
   Window  big;
@@ -234,10 +248,16 @@ typedef struct {
   int     expectOwnClip;
   int     winSSave;
   int     nXbuttons;
+  RECT    monitorRect;
+  RECT    screenRect;
+  int     screenHeight;
+  int     screenWidth;
+  int     lastFromX;
 #endif /* WIN_2_X */
 
   /* stuff on "to" display */
   Display *toDpy;
+  Atom    toDpyUtf8String;
   Window  selWin;
   unsigned int inverseMap[N_BUTTONS + 1]; /* inverse of button mapping */
 
@@ -329,6 +349,8 @@ static PSTICKY stickies     = NULL;
 static Bool    doBtnBlock   = False;
 static Bool    doCapsLkHack = False;
 static Bool    doClipCheck  = False;
+static Bool    doDpmsMouse  = False;
+static int     logicalOffset= 0;
 static int     nButtons     = 0;
 static KeySym  buttonmap[N_BUTTONS + 1][MAX_BUTTONMAPEVENTS + 1];
 
@@ -353,6 +375,11 @@ WinMain (HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
   int argc;
   char *argv[MAX_WIN_ARGS];
   char *ap;
+
+  if (lpCmd[0] == ' ')
+  {
+    lpCmd++;
+  }
 
   argv[0] = programStr;
   argc = 1;
@@ -617,6 +644,17 @@ char **argv;
 #ifdef DEBUG
       printf("behavior of CapsLock will be hacked\n");
 #endif
+    } else if (!strcasecmp(argv[arg], "-dpmsmouse")) {
+      doDpmsMouse = True;
+#ifdef DEBUG
+      printf("mouse movement wakes monitor\n");
+#endif
+    } else if (!strcasecmp(argv[arg], "-offset")) {
+      if (++arg >= argc) Usage();
+      logicalOffset = atoi(argv[arg]);
+#ifdef DEBUG
+      printf("logicalOffset %d\n", logicalOffset);
+#endif
     } else if (!strcasecmp(argv[arg], "-clipcheck")) {
       doClipCheck = True;
 #ifdef DEBUG
@@ -724,6 +762,7 @@ static void Usage()
   printf("       -label <LABEL>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
 #ifdef WIN_2_X
+  printf("       -offset [-]<pixel offset of \"to\">\n");
   printf("WIN_2_X build allows Windows or X as -from display\n");
   printf("Note that -fromwin sets default to -big -west -capslockhack\n");
   printf("A Windows shortcut of the form:\n");
@@ -900,8 +939,39 @@ PDPYINFO pDpyInfo;
   pDpyInfo->unreasonableCount = 0;
 
   if (fromDpy == fromWin) {
+
     fromWidth=GetSystemMetrics(SM_CXSCREEN);
     fromHeight=GetSystemMetrics(SM_CYSCREEN);
+    
+    POINT pt;
+    
+    pDpyInfo->screenRect.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    pDpyInfo->screenRect.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    pDpyInfo->screenRect.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    pDpyInfo->screenRect.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+    pDpyInfo->screenHeight = pDpyInfo->screenRect.bottom - pDpyInfo->screenRect.top;
+    pDpyInfo->screenRect.bottom = pDpyInfo->screenRect.right - pDpyInfo->screenRect.left;
+
+    // Guess a a point at or near the monitor we want.
+    if (doEdge == EDGE_NORTH || doEdge == EDGE_SOUTH)
+    {
+      pt.x = (pDpyInfo->screenRect.right - pDpyInfo->screenRect.left) / 2;
+      pt.y = (doEdge == EDGE_SOUTH) ? pDpyInfo->screenRect.bottom - 1 : pDpyInfo->screenRect.top;;
+    }
+    else
+    {
+      pt.x = (doEdge == EDGE_EAST) ? pDpyInfo->screenRect.right - 1 : pDpyInfo->screenRect.left;
+      pt.y = (pDpyInfo->screenRect.bottom -  pDpyInfo->screenRect.top) / 2;
+    }
+
+    HMONITOR mon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+
+    MONITORINFO monInfo;
+    monInfo.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfo(mon, &monInfo);
+
+    pDpyInfo->monitorRect = monInfo.rcMonitor;
+
     /* these should not be used, but keep compiler happy */
     fromScreen = (Screen *) 0;
     black = white = 0;
@@ -932,6 +1002,15 @@ PDPYINFO pDpyInfo;
   vertical   = pDpyInfo->vertical = (doEdge == EDGE_NORTH
                                       || doEdge == EDGE_SOUTH);
 #endif
+
+#ifdef WIN_2_X
+  if (fromDpy != fromWin) {
+#endif
+    pDpyInfo->fromDpyUtf8String = XInternAtom(fromDpy, UTF8_STRING, False);
+#ifdef WIN_2_X
+  }
+#endif
+  pDpyInfo->toDpyUtf8String = XInternAtom(toDpy, UTF8_STRING, False);
 
   /* other dpyinfo values */
   pDpyInfo->mode        = X2X_DISCONNECTED;
@@ -1008,7 +1087,7 @@ PDPYINFO pDpyInfo;
       RegisterClass(&wndclass);
 
 
-      pDpyInfo->bigwindow = CreateWindowEx(
+     pDpyInfo->bigwindow = CreateWindowEx(
 	 WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
 	 fromWinName,
 	 "x2x_big",
@@ -1028,10 +1107,10 @@ PDPYINFO pDpyInfo;
 	 "x2x_edge",
 	 winstyle,
 	 /* Next 4 are x, y, width, height */
-	 (doEdge == EDGE_EAST) ? fromWidth -1: 0,
-	 0,
-	 1,
-	 fromHeight,
+	 (doEdge == EDGE_EAST) ? pDpyInfo->monitorRect.right -1: pDpyInfo->monitorRect.left,
+   (doEdge == EDGE_SOUTH) ? pDpyInfo->monitorRect.bottom - 1 : pDpyInfo->monitorRect.top,
+   (pDpyInfo->vertical) ? pDpyInfo->monitorRect.right - pDpyInfo->monitorRect.left : 1,
+   (pDpyInfo->vertical) ? 1 : pDpyInfo->monitorRect.bottom - pDpyInfo->monitorRect.top,
 	 pDpyInfo->bigwindow, // Parent handle
 	 NULL,                // Menu handle
 	 m_instance,
@@ -1335,6 +1414,13 @@ PDPYINFO pDpyInfo;
   Display *fromDpy = pDpyInfo->fromDpy;
   Window  trigger = pDpyInfo->trigger;
 
+  PSHADOW   pShadow;
+	
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    XFlush(pShadow->dpy);
+  }
+
 #ifdef DEBUG
   printf("connecting\n");
 #endif
@@ -1556,6 +1642,11 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
   pDpyInfo->lastFromCoord = fromCoord;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+    if (doDpmsMouse)
+    {
+      DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    }
+      
     XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
 		      vert?pDpyInfo->xTables[toScreenNum][pEv->x_root]:toCoord,
 		      vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],
@@ -1870,6 +1961,13 @@ XSelectionRequestEvent *pEv;
 {
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
   Display *otherDpy;
+  Atom utf8string;
+
+  if (dpy == pDpyInfo->fromDpy) {
+    utf8string = pDpyInfo->fromDpyUtf8String;
+  } else {
+    utf8string = pDpyInfo->toDpyUtf8String;
+  }
 
 #ifdef DEBUG
     printf("selection request\n");
@@ -1879,7 +1977,7 @@ XSelectionRequestEvent *pEv;
      or send me the code to do it. */
   if ((pDpyXtra->sState != SELSTATE_ON) ||
       (pEv->selection != XA_PRIMARY) ||
-      (pEv->target > XA_LAST_PREDEFINED)) { /* bad request, punt request */
+      (pEv->target > XA_LAST_PREDEFINED && pEv->target != utf8string)) { /* bad request, punt request */
     pEv->property = None;
     SendSelectionNotify(pEv); /* blam! */
   } else {
@@ -1950,12 +2048,19 @@ XSelectionEvent *pEv;
   unsigned char *prop;
   Bool success;
   XSelectionRequestEvent *pSelReq;
+  Atom utf8string;
 
 #define DEFAULT_PROP_SIZE 1024L
 
 #ifdef DEBUG
-    printf("selection notify\n");
+  printf("selection notify\n");
 #endif
+
+  if (dpy == pDpyInfo->fromDpy) {
+    utf8string = pDpyInfo->fromDpyUtf8String;
+  } else {
+    utf8string = pDpyInfo->toDpyUtf8String;
+  }
 
   if ((dpy == pDpyInfo->sDpy) && (pDpyInfo->sTime == pEv->time)) {
     success = False;
@@ -1964,8 +2069,12 @@ XSelectionEvent *pEv;
 			   DEFAULT_PROP_SIZE, True, AnyPropertyType,
 			   &type, &format, &nitems, &after, &prop)
 	== Success) { /* got property */
-      if ((type != None) && (format != None) && (nitems != 0) &&
-	  (prop != None) && (type <= XA_LAST_PREDEFINED)) { /* known type */
+      if ((type != None)
+          && (format != None)
+          && (nitems != 0)
+          && (prop != None)
+          /* known type */
+          && (type <= XA_LAST_PREDEFINED || type == UTF8_STRING)) {
 	if (after == 0L) { /* got everything */
 	  success = True;
 	} else { /* try to get everything */
@@ -2210,17 +2319,16 @@ void MoveWindowToEdge(PDPYINFO pDpyInfo) {
 #endif
 
   SetWindowPos(pDpyInfo->bigwindow, HWND_BOTTOM,
-	       0, 0,
-	       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
+	       pDpyInfo->screenRect.left, pDpyInfo->screenRect.top,
+	       pDpyInfo->screenWidth, pDpyInfo->screenHeight,
 	       SWP_HIDEWINDOW /* | SWP_NOREDRAW */);
 
   SetWindowPos(pDpyInfo->edgewindow, HWND_TOPMOST,
-	       (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth -1: 0,
-	       0,
-	       1,
-	       pDpyInfo->fromHeight,
+	       (doEdge == EDGE_EAST) ? pDpyInfo->monitorRect.right -1: pDpyInfo->monitorRect.left,
+         (doEdge == EDGE_SOUTH) ? pDpyInfo->monitorRect.bottom - 1 : pDpyInfo->monitorRect.top,
+         (pDpyInfo->vertical) ? pDpyInfo->monitorRect.right - pDpyInfo->monitorRect.left : 1,
+         (pDpyInfo->vertical) ? 1 : pDpyInfo->monitorRect.bottom - pDpyInfo->monitorRect.top,
 	       SWP_SHOWWINDOW | SWP_NOREDRAW);
-
   pDpyInfo->onedge=1;
 
   SetForegroundWindow(hWndSave);
@@ -2279,11 +2387,11 @@ int MoveWindowToScreen(PDPYINFO pDpyInfo)
     free(pInputs);
     return 1;
   }
+  
   SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
-	       0, 0,
-	       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
+	       pDpyInfo->screenRect.left, pDpyInfo->screenRect.top,
+	       pDpyInfo->screenWidth, pDpyInfo->screenHeight,
 	       SWP_SHOWWINDOW | SWP_NOREDRAW);
-  SetFocus(pDpyInfo->bigwindow);
 
   pDpyInfo->onedge=0;
   return 1;
@@ -2293,7 +2401,13 @@ static void DoWinConnect(pDpyInfo, x, y)
 PDPYINFO pDpyInfo;
 int x,y;
 {
-
+  PSHADOW   pShadow;
+	
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    XFlush(pShadow->dpy);
+  }
+  
 #ifdef DEBUG
   printf("connecting (Win2x)\n");
 #endif
@@ -2308,9 +2422,24 @@ int x,y;
 	   (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
 	   y);
 #endif
-    SetCursorPos((doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3, y);
 
-    pDpyInfo->lastFromX = (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3;
+    
+    
+    if (pDpyInfo->vertical)
+    {
+      pDpyInfo->lastFromCoord = (doEdge == EDGE_SOUTH) ? 0 : pDpyInfo->fromHeight - 2;
+      pDpyInfo->lastFromX = x - pDpyInfo->monitorRect.left - logicalOffset;
+      pDpyInfo->lastFromY = pDpyInfo->lastFromCoord;
+    }
+    else
+    {
+
+      pDpyInfo->lastFromCoord = (doEdge == EDGE_EAST) ? 0 : pDpyInfo->fromWidth - 2;
+      pDpyInfo->lastFromX = pDpyInfo->lastFromCoord;
+      pDpyInfo->lastFromY = y - pDpyInfo->monitorRect.top - logicalOffset;
+    }
+
+    SetCursorPos(pDpyInfo->lastFromX, pDpyInfo->lastFromY);
   }
 }
 
@@ -2344,7 +2473,14 @@ int x,y;
 	   (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2,
 	   y);
 #endif
-    SetCursorPos((doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2, y);
+    if (pDpyInfo->vertical)
+    {
+      SetCursorPos(x + pDpyInfo->monitorRect.left + logicalOffset, (doEdge == EDGE_SOUTH) ? pDpyInfo->monitorRect.bottom - 2 : pDpyInfo->monitorRect.top);
+    }
+    else
+    {
+      SetCursorPos((doEdge == EDGE_EAST) ? pDpyInfo->monitorRect.right - 2 : pDpyInfo->monitorRect.left, y + pDpyInfo->monitorRect.top + logicalOffset);
+    }
   }
 
   MoveWindowToEdge(pDpyInfo);
@@ -2436,10 +2572,24 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       x = pt.x;
       y = pt.y;
 
-      if(x<0 || x>32768) x=0;
-      if(y<0 || y>32768) y=0;
-      if(x>=pDpyInfo->fromWidth) x = pDpyInfo->fromWidth - 1;
-      if(y>=pDpyInfo->fromHeight) y = pDpyInfo->fromHeight - 1;
+      if(x<-32768 || x>32768) x=0;
+      if(y<-32768 || y>32768) y=0;
+      
+      if(x>=pDpyInfo->fromWidth)
+        x = pDpyInfo->fromWidth - 1;
+      if(y>=pDpyInfo->fromHeight)
+        y = pDpyInfo->fromHeight - 1;
+      if(y<0)
+        y = 0;
+      if(x<0)
+        x = 0;
+
+      if (pt.x != x || pt.y != y)
+      {
+        SetCursorPos(pDpyInfo->lastFromX, pDpyInfo->lastFromY);
+        return;
+      }
+
 
       if(pDpyInfo->onedge)
       {
@@ -2470,7 +2620,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 #ifdef DEBUGMOUSE
 	printf("e(%d,%d) ", x, y);
 #endif
-	delta = pDpyInfo->lastFromX - x;
+  delta = pDpyInfo->lastFromCoord - ((pDpyInfo->vertical) ? y : x);
 	if (delta < 0) delta = -delta;
 	if (delta > pDpyInfo->unreasonableDelta) {
 	  /* Guess that the warp failed and try it again... */
@@ -2479,7 +2629,14 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		 (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
 		 y);
 #endif
-	  SetCursorPos((doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3, y);
+    if (pDpyInfo->vertical)
+    {
+	    SetCursorPos(x, (doEdge == EDGE_SOUTH) ? 1 : pDpyInfo->fromHeight - 3);
+    }
+    else
+    {
+      SetCursorPos((doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3, y);
+    }
 	}
 	//WinPointerEvent(pDpyInfo, x,y, wParam, iMsg);
 
@@ -2531,12 +2688,12 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 #endif
 	if (!pDpyInfo->onedge) {
 	  SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
-		       0, 0,
-		       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
+		       pDpyInfo->screenRect.left, pDpyInfo->screenRect.top,
+	       pDpyInfo->screenWidth, pDpyInfo->screenHeight,
 		       SWP_HIDEWINDOW);
 	  SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
-		       0, 0,
-		       pDpyInfo->fromWidth, pDpyInfo->fromHeight,
+		       pDpyInfo->screenRect.left, pDpyInfo->screenRect.top,
+	       pDpyInfo->screenWidth, pDpyInfo->screenHeight,
 		       SWP_SHOWWINDOW  | SWP_NOREDRAW);
 	}
 	pDpyInfo->winSSave = 0;
@@ -2729,6 +2886,18 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       /* keep transparent (I hope) */
     case WM_ERASEBKGND:
       return 1;
+
+    case X2X_MSG_HOTKEY:
+      if (pDpyInfo->mode == X2X_CONNECTED)
+      {
+        DoWinDisconnect(pDpyInfo, 30, 30);
+      }
+      else
+        {
+        DoWinConnect(pDpyInfo, 30, 30);
+      }
+      
+      return 1;
   }
 
 #ifdef DEBUG
@@ -2744,7 +2913,8 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
   unsigned int button, toButton;
   int       toScreenNum;
   PSHADOW   pShadow;
-  int       toX, fromX, fromY, delta;
+  int       toCoord, fromCoord, fromX, fromY, delta;
+  short **coordTables;
 
   button = 0;
   switch (msg) {
@@ -2752,87 +2922,76 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
 
     /* seems that we get repeats, ignore them */
     if ((x == pDpyInfo->lastFromX) && (y == pDpyInfo->lastFromY)) {
-#ifdef DEBUGMOUSE
-      printf("m() ");
-#endif
+      
       return;
     }
-#ifdef DEBUGMOUSE
-    printf("m(%d, %d) ", x,y);
-#endif
+    
     /* find the screen */
     toScreenNum = pDpyInfo->toScreen;
     fromX = x;
     fromY = y;
-    toX = pDpyInfo->xTables[toScreenNum][fromX];
 
+    fromCoord = (pDpyInfo->vertical) ? fromY : fromX;
+
+    coordTables = (pDpyInfo->vertical) ? pDpyInfo->yTables : pDpyInfo->xTables;
+
+    toCoord = coordTables[toScreenNum][fromCoord];
+    
     /* sanity check motion: necessary for nondeterminism surrounding warps */
-    delta = pDpyInfo->lastFromX - fromX;
+    delta = pDpyInfo->lastFromCoord - fromCoord;
     if (delta < 0) delta = -delta;
     if (delta > pDpyInfo->unreasonableDelta) {
       if (pDpyInfo->unreasonableCount++ < MAX_UNREASONABLES) {
-#ifdef DEBUG
-	printf("Unreasonable x delta last = %d this = %d\n",
-	       pDpyInfo->lastFromX, fromX);
-#endif
-	return;
+        
+        return;
       }
       pDpyInfo->unreasonableCount = 0;
-#ifdef DEBUG
-      printf("Too many unreasonable deltas to really be unreasonable!\n");
-#endif
     }
-
-    if (SPECIAL_COORD(toX) != 0) { /* special coordinate */
-      if (toX == COORD_INCR) {
-	if (toScreenNum != (pDpyInfo->nScreens - 1)) { /* next screen */
-	  toScreenNum = ++(pDpyInfo->toScreen);
-	  fromX = pDpyInfo->fromXIncr;
-	  toX = pDpyInfo->xTables[toScreenNum][fromX];
-	} else { /* disconnect! */
-#ifdef DEBUG
-	  printf("INCR screen %d: ", toScreenNum);
-#endif
-	  if (doBtnBlock &&
-	      (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
-#ifdef DEBUG
-	    printf("Disconnect aborted by button state 0x%x\n",
-		   (unsigned int)keyflags);
-#endif
-	  } else {
-	    DoWinDisconnect(pDpyInfo, x, y);
-	    fromX = pDpyInfo->fromXDisc;
-	  }
-	  toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
-	}
+    
+    if (SPECIAL_COORD(toCoord) != 0) { /* special coordinate */
+      if (toCoord == COORD_INCR) {
+        if (toScreenNum != (pDpyInfo->nScreens - 1)) { /* next screen */
+          toScreenNum = ++(pDpyInfo->toScreen);
+          fromCoord = pDpyInfo->fromIncrCoord;
+          toCoord = coordTables[toScreenNum][fromCoord];
+        } else { /* disconnect! */
+          if (doBtnBlock &&
+            (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
+          } else {
+            DoWinDisconnect(pDpyInfo, x, y);
+            fromCoord = pDpyInfo->fromDiscCoord;
+          }
+          toCoord = coordTables[toScreenNum][pDpyInfo->fromConnCoord];
+        }
       } else { /* DECR */
-	if (toScreenNum != 0) { /* previous screen */
-	  toScreenNum = --(pDpyInfo->toScreen);
-	  fromX = pDpyInfo->fromXDecr;
-	  toX = pDpyInfo->xTables[toScreenNum][fromX];
-	} else { /* disconnect! */
-#ifdef DEBUG
-	  printf("DECR screen %d: ", toScreenNum);
-#endif
-	  if (doBtnBlock &&
-	      (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
-#ifdef DEBUG
-	    printf("Disconnect aborted by button state 0x%x\n",
-		   (unsigned int)keyflags);
-#endif
-	  } else {
-	    DoWinDisconnect(pDpyInfo, x, y);
-	    fromX = pDpyInfo->fromXDisc;
-	  }
-	  toX = pDpyInfo->xTables[toScreenNum][pDpyInfo->fromXConn];
-	}
+        if (toScreenNum != 0) { /* previous screen */
+          toScreenNum = --(pDpyInfo->toScreen);
+          fromCoord = pDpyInfo->fromDecrCoord;
+          toCoord = coordTables[toScreenNum][fromCoord];
+        } else { /* disconnect! */
+          if (doBtnBlock &&
+            (keyflags & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) {
+          } else {
+            DoWinDisconnect(pDpyInfo, x, y);
+            fromCoord = pDpyInfo->fromDiscCoord;
+          }
+          toCoord = coordTables[toScreenNum][pDpyInfo->fromConnCoord];
+        }
       } /* END if toX */
     } /* END if SPECIAL_COORD */
+    pDpyInfo->lastFromCoord = fromCoord;
     pDpyInfo->lastFromX = fromX;
     pDpyInfo->lastFromY = fromY;
+    
+    
+    
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-      XTestFakeMotionEvent(pShadow->dpy, toScreenNum, toX,
-			   pDpyInfo->yTables[toScreenNum][y], 0);
+      if (doDpmsMouse)
+      {
+        DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+      }
+      XTestFakeMotionEvent(pShadow->dpy, toScreenNum, pDpyInfo->xTables[toScreenNum][x],
+        pDpyInfo->yTables[toScreenNum][y], 0);
       XFlush(pShadow->dpy);
     } /* END for */
     return;
