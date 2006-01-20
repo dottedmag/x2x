@@ -1,3 +1,13 @@
+x2x (1.27-8.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * High-urgency upload for RC bugfix
+  * Build-depend on libx11-dev, libxtst-dev, and x-dev instead of the
+    obsolete xlibs-dev; thanks to Justin Pryzby <justinpryzby@users.sf.net>
+    for testing.  Closes: #346755.
+
+ -- Steve Langasek <vorlon@debian.org>  Fri, 20 Jan 2006 10:43:33 -0800
+
 x2x (1.27-8) unstable; urgency=low
 
   * Forgot to fix the maintainer in debian/control. Fixed now...
