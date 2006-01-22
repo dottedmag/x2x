@@ -950,7 +950,8 @@ PDPYINFO pDpyInfo;
     pDpyInfo->screenRect.right = GetSystemMetrics(SM_CXVIRTUALSCREEN);
     pDpyInfo->screenRect.bottom = GetSystemMetrics(SM_CYVIRTUALSCREEN);
     pDpyInfo->screenHeight = pDpyInfo->screenRect.bottom - pDpyInfo->screenRect.top;
-    pDpyInfo->screenRect.bottom = pDpyInfo->screenRect.right - pDpyInfo->screenRect.left;
+    pDpyInfo->screenWidth = pDpyInfo->screenRect.right - pDpyInfo->screenRect.left;
+
 
     // Guess a a point at or near the monitor we want.
     if (doEdge == EDGE_NORTH || doEdge == EDGE_SOUTH)
@@ -2074,7 +2075,7 @@ XSelectionEvent *pEv;
           && (nitems != 0)
           && (prop != None)
           /* known type */
-          && (type <= XA_LAST_PREDEFINED || type == UTF8_STRING)) {
+          && (type <= XA_LAST_PREDEFINED || type == utf8string)) {
 	if (after == 0L) { /* got everything */
 	  success = True;
 	} else { /* try to get everything */
