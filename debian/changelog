@@ -1,3 +1,22 @@
+x2x (1.27.svn.20060214-1) unstable; urgency=low
+
+  * New upstream (SVN checkout of the trunk), adds support for DPMS and
+    the new option -dpmsmouse (closes: #203021).
+
+  * New maintainer (closes: #352552).
+  * Acknowledge NMUs (closes: #95761, #346755).
+  * debian/control:
+    + Build-Depend on debhelper (>= 5.0.0).
+    + Update Standards-Version to 3.6.2.2, no changes needed.
+    + Update maintainer contact info.
+  * debian/compat: New file.
+  * debian/copyright: Update info.
+  * debian/rules:
+    + Don't use DH_COMPAT.
+    + Various cleanups.
+
+ -- Romain Francoise <rfrancoise@debian.org>  Tue, 14 Feb 2006 21:43:23 +0100
+
 x2x (1.27-8.1) unstable; urgency=high
 
   * Non-maintainer upload.

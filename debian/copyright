@@ -1,31 +1,30 @@
 This Debian GNU/Linux prepackaged version of x2x was put together by me,
 Charles Briscoe-Smith <cpbs@debian.org> using source code obtained from
 <URL:ftp://gatekeeper.dec.com/pub/DEC/SRC/x2x/x2x-1.27.tar.gz>.
+It is now maintained by Romain Francoise <rfrancoise@debian.org>.
 
-(In case you haven't come across the acronym before, TANSTAAFL (used
-below) means "There Ain't No Such Thing As A Free Lunch".)
+  AUTHORS
+  -------
 
-  x2x: Uses the XTEST extension to forward keystrokes from a window on
-       one display to another display.  Useful for desks with multiple
-       keyboards.
+  David Chaiken <chaiken@acm.org>
+  Original version author
 
-  AUTHOR
-  ------
+  Charles Briscoe-Smith
+  -north, -south options. Various patches.
 
-  David Chaiken
-  (chaiken@pa.dec.com)
+  Mark Hayter
+  Cygwin version, -fromwin to allow using Windows as source display.
 
-  BUGS
-  ----
+  Snow <snowl@snow.vg>
+  Windows version patches
 
-  This software is experimental!  Heaven help you if your network
-  connection should go down.  Caveat hacker.  TANSTAAFL.
+  Mikhail Gusarov <dottedmag@dottedmag.net>
+  Maintainer
 
   LAWYERESE
   ---------
 
-  Copyright (c) 1997
-  Digital Equipment Corporation.  All rights reserved.
+  Copyright (c) 1997 Digital Equipment Corporation.  All rights reserved.
 
   By downloading, installing, using, modifying or distributing this
   software, you agree to the following:

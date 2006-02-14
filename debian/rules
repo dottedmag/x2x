@@ -1,14 +1,8 @@
 #!/usr/bin/make -f
 
-# This script uses debhelper by Joey Hess
-#export DH_VERBOSE=1
-export DH_COMPAT=2
-
 build:	build-stamp
 build-stamp:
 	dh_testdir
-	# build package here
-	ln -s x2x.1 x2x.man
 	xmkmf -a
 	make CDEBUGFLAGS="-O2 -g"
 	touch build-stamp
@@ -19,7 +13,6 @@ clean:
 	rm -f build-stamp
 	-$(MAKE) clean
 	dh_clean
-	rm -f x2x.man
 	-rm -f Makefile Makefile.bak
 
 install: build
@@ -28,14 +21,13 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-binary-indep:	build install
 binary-arch:	build install
 	dh_testdir
 	dh_testroot 
 	dh_installdebconf
 	dh_installdirs usr/bin
-	cp x2x debian/x2x/usr/bin
-	dh_installmanpages
+	dh_install x2x usr/bin
+	dh_installman x2x.man
 	dh_installdocs
 	dh_installchangelogs
 	dh_strip
@@ -48,5 +40,3 @@ binary-arch:	build install
 
 binary:	binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary
-
-

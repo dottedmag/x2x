@@ -1,9 +1,9 @@
 Source: x2x
-Maintainer: Randolph Chung <tausq@debian.org>
-Build-Depends: debhelper, libx11-dev, libxtst-dev, x-dev, xutils
+Maintainer: Romain Francoise <rfrancoise@debian.org>
+Build-Depends: debhelper (>= 5.0.0), libx11-dev, libxtst-dev, x-dev, xutils
 Section: x11
 Priority: optional
-Standards-Version: 3.2.1.0
+Standards-Version: 3.6.2.2
 
 Package: x2x
 Architecture: any

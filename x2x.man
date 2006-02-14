@@ -3,11 +3,17 @@
 .SH NAME
 x2x \- X to X connection
 .SH SYNTAX
-\fB x2x\fR  <[-to <DISPLAY>] | [-from <DISPLAY>]> [options...]
+\fB x2x\fR  <[-to <DISPLAY>] | [-fromwin | -from <DISPLAY>]> [options...]
 .SH DESCRIPTION
 x2x allows the keyboard and mouse on one ("from") X display to be used to
 control another ("to") X display.  Since x2x uses the XTEST extension,
 the "to" X display must support XTEST.
+
+If x2x is built under Cygwin (on Windows XP or Windows 2000) then the
+-fromwin option may be specified to allow the "from" display to be the
+Windows desktop. (The Cygwin build also supports use of an X display
+for the "from" screen). Use of -fromwin sets the default behaviour as
+if the -big -west -capslockhack options had also been given.
 
 In the default interface, x2x puts a window on the "from" display.
 This window is labeled with the name of the "to" display.  Keystrokes
@@ -17,15 +23,16 @@ the input focus.  Clicking on the x2x window causes the mouse on the
 a subsequent multiple button click on the "to" display returns control
 to the "from" display.
 
-If the -north, -south, -east or -west options are specified on the
-command line, x2x starts up with a different interface.  When the mouse
-moves to the top, bottom, east side or west side of the default screen
-on the "from" display, the cursor slides over to the "to" display.
-When the mouse returns to to side of the "to" display that it entered,
-it slides back onto the "from" display.
+If the -fromwin, -north, -south, -east or -west options are specified
+on the command line, x2x starts up with a different interface.  When
+the mouse moves to the top, bottom, east side or west side of the
+default screen on the "from" display, the cursor slides over to the
+"to" display.  When the mouse returns to to side of the "to" display
+that it entered, it slides back onto the "from" display.
 
 Unless the -nosel option is specified, x2x relays X selections from
-one display to the other.
+one display to the other. (If -fromwin is specified then the X
+selection is relayed to and from the Windows clipboard as text strings).
 
 Here are a few hints for eXcursion users (based on Intel version
 2.1.309).  First, use the -big option.  Second, in the control panel,
@@ -36,7 +43,7 @@ Windows clipboard.  As is the case with all X applications running on
 after performing the X selection for this operation to work.  x2x is
 known to work poorly with eXcursion running on Windows 95, probably
 due to the Windows 95 task scheduler.  x2x does work well with eXcursion
-running on Windows NT.  
+running on Windows NT.
 
 The hints for eXcursion are also valid for Exceed, with the exception
 that X selections work better, as long as you are using x2x version
@@ -46,86 +53,130 @@ that X selections work better, as long as you are using x2x version
 Either the -to option or the -from option (or both) must be specified.
 .TP
 .B \-to \fIdisplay\fP
-.IP 
+.IP
 Indicates the ("to") display that is remotely controlled by the "from" display.
 Default is equivalent to the default display.
 .TP
 .B \-from \fIdisplay\fP
-.IP 
+.IP
 Indicates the ("from") display that remotely controls the "to" display.
 Default is equivalent to the default display.
 .TP
+.B \-fromwin
+.IP
+Available when x2x is built in the Cygwin environment. This option
+indicates the ("from") display should be the Windows desktop. In this
+case the "to" display must be specified with the \-to option. Setting
+this option forces \-big and sets the default to \-west \-capslockhack
+
+The -fromwin option works best when Windows is configured for
+focus-follows-mouse also known as X Mouse. This can be set using
+TweakUI for Windows XP (on the Mouse/X-Mouse panel) or the XMouse2000
+program for Windows 2000. If Windows is set for its default behaviour
+x2x will attempt to get the keyboard and mouse focus but may not
+succeed. (The Windows XP TweakUI has a General/Focus option that can be
+unchecked to allow applications to steal the focus.) If it fails the
+first try, x2x tries quite hard to get the focus!
+
+If the "to" display supports mouse buttons 4 and 5 then mouse wheel
+events on the Windows side are translated to clicks of buttons 4 and 5
+on the X display. This matches with XFree86 servers using
+Option "ZAxisMapping" "4 5".
+
+A link may be created on the Windows desktop to conveniently launch
+x2x. Assuming cygwin is installed to C:\\cygwin and x2x.exe is in
+/usr/X11R6/bin then the link properties should be set to:
+
+Target:
+.br
+C:\\cygwin\\usr\\X11R6\\bin\\run.exe\ /usr/X11R6/bin/x2x\ \-fromwin\ \-to\ somewhere:0.0\ \-east
+
+Start In: C:\\cygwin\\usr\\X11R6\\bin
+
+The "Start In" option is important to allow DLLs to be loaded and
+C:\\cygwin\\bin must be on the Windows PATH to allow other DLLs to be
+loaded. (If either of these are incorrect, launching the application
+tends to silently fail.)
+
+There are two magic key combinations activated by -fromwin:
+
+RightAlt-Home: Forces the focus back to Windows without needing the
+mouse to be moved. Useful when some popup window on the Windows side
+grabs the mouse!
+
+RightAlt-End: Exit x2x
+.TP
 .B \-north
-.IP 
+.IP
 Slide off the north side of the "to" display onto the "from" display.
 .TP
 .B \-south
-.IP 
+.IP
 Slide off the south side of the "to" display onto the "from" display.
 .TP
 .B \-east
-.IP 
+.IP
 Slide off the east side of the "to" display onto the "from" display.
 .TP
 .B \-west
-.IP 
+.IP
 Slide off the west side of the "to" display onto the "from" display.
 .TP
 .B \-font \fIfontname\fP
-.IP 
+.IP
 The font used in the x2x window. (Overridden by -east or -west.)
 .TP
 .B \-geometry \fIspecification\fP
-.IP 
-The X geometry specification for the x2x window.  
+.IP
+The X geometry specification for the x2x window.
 (Overridden by -north, -south, -east or -west.)
 .TP
 .B \-wait
-.IP 
+.IP
 Tells x2x to poll the "to" and "from" displays at startup until they
 are ready.  Useful for login scripts.
 .TP
 .B \-big
-.IP 
+.IP
 Workaround for a bug in the cursor grab implementations of at least one
 X server.  Put a big window over the "to" display in order to force the
-X server to track the cursor.
+X server to track the cursor. (This option is forced by the -fromwin option).
 .TP
 .B \-buttonblock
-.IP 
+.IP
 If this option is enabled with -north, -south, -east or -west, the
 cursor will not slide back onto the "from" display when one or more
 mouse buttons are pressed.
 .TP
 .B \-buttonmap \fIbutton#\fP \fR"\fP\fIKeySym ...\fP\fR"\fP
-.IP 
+.IP
 Map a mouse button to one or more keyboard events on the "to" display.
 This is useful if you have a mouse with more buttons than the remote X
 server can handle (e.g. a wheel mouse on a PC, merged with a Sun/Sparc
 OpenWindows display).
 .TP
 .B \-nomouse
-.IP 
+.IP
 Don't capture the mouse.
 (Overridden by -north, -south, -east or -west.)
 .TP
 .B \-nopointermap
-.IP 
+.IP
 Since x2x uses XTEST, which sends input at a lower level than the
 pointer button mapping, x2x needs to understand the "to" display's
 button mapping and do appropriate conversion.  Use this option
 to turn off the pointer button conversion.
 .TP
 .B \-nosel
-.IP 
+.IP
 Don't relay the X selection between displays.
 .TP
 .B \-noautoup
-.IP 
-Normally, the autoup feature in x2x automatically lifts up all keys and 
+.IP
+Normally, the autoup feature in x2x automatically lifts up all keys and
 mouse buttons when it removes the cursor from the "from" display.
-.B 
-Note: the autoup feature changes the state of lock functions like 
+.B
+Note: the autoup feature changes the state of lock functions like
 .B
 Caps Lock.  The state of the lock function may not correspond to
 .B
@@ -133,7 +184,7 @@ the state of the keyboard LEDs!
 To disable this feature, use the \-noautoup command line option.
 .TP
 .B \-resurface
-.IP 
+.IP
 Ugly hack to work-around window manager ugliness.  The -north, -south,
 -east and -west modes actually put a small window on the side of the
 "from" display.  This option causes this window to resurface itself if
@@ -141,13 +192,31 @@ another window ever obscures it.  This option can cause really nasty
 behavior if another application tries to do the same thing.  Useful for
 login scripts.
 .TP
+.B \-capslockhack
+.IP
+Ugly hack to work-around the situation in which the "to" Xserver doesn't
+seem to honor the state of the CapsLock on the "from" Xserver. This is
+the default when the -fromwin option is given (although the hack used
+is slightly less ugly).
+.TP
+.B \-nocapslockhack
+.IP
+Disable the -capslockhack behaviour. Used to change the default
+behaviour after the -fromwin option is specified.
+.TP
+.B \-clipcheck
+.IP
+Check that clipboard entries are regular strings (XA_STRING) before
+forwarding to Windows. Enabling this is safer but may prevent copying
+with certain setups (eg from emacs under KDE/XFree).
+.TP
 .B \-shadow \fIdisplay\fP
-.IP 
+.IP
 Also sends mouse movements and keystrokes to this display.  Useful
 for demos.  Amaze your friends: specify multiple shadows.
 .TP
 .B \-sticky \fIsticky-key\fP
-.IP 
+.IP
 This option is primarily for "lock" keys like Caps_Lock.  If a lock
 key only seems to work on every other press, try this option.  The
 sticky option prevents autoup for the specified key.  Look in
@@ -156,17 +225,35 @@ sticky option prevents autoup for the specified key.  Look in
 .TP
 .B \-label \fIlabel\fP
 Override the title of the control window (useful when running over ssh).
-.IP 
+.IP
+.TP
+.B \-copyright
+.IP
+Prints the full copyright for the x2x code.
 .SH AUTHOR
 David Chaiken
 .br
 (chaiken@pa.dec.com)
-.PP
+.br
+Mark Hayter (-fromwin code, thanks to the WinVNC sources)
+.br
 Addition of -north and -south options by Charles Briscoe-Smith
 <cpbs@debian.org>.
 .SH BUGS
 This software is experimental!  Heaven help you if your network
 connection should go down.  Caveat hacker.  TANSTAAFL.
+
+When using the -fromwin option if the Ctrl-Alt-Del keysequence is used
+while the mouse is forwarded to the X display then the Ctrl and Alt
+key press events are reported to x2x and forwarded but no other key
+events are generated. Thus if the Ctrl-Alt-Del sequence is used to
+manually lock the Windows display when the display is unlocked the
+mouse will still be forwarded to the X screen and the X server will
+believe Ctrl and Alt are still pressed. Pressing and releasing Ctrl
+and Alt should restore correct operation, as should returning the
+mouse to the Windows display (or using the RightAlt-Home magic key
+sequence).
+
 .SH LAWYERESE
 Copyright (c) 1997
 Digital Equipment Corporation.  All rights reserved.
