@@ -1879,7 +1879,7 @@ XKeyEvent *pEv;
   Bool      DoFakeShift = False;
   KeyCode   toShiftCode;
 
-  XLookupString(pEv, NULL, 0, &keysym, NULL);
+  keysym = XKeycodeToKeysym(pDpyInfo->fromDpy, pEv->keycode, 0);
   bPress = (pEv->type == KeyPress);
 
   /* If CapsLock is on, we need to do some funny business to make sure the */
