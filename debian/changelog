@@ -1,3 +1,11 @@
+x2x (1.27.svn.20060225-1) unstable; urgency=low
+
+  * New upstream, includes a patch from yours truly fixing the "less
+    becomes greater over x2x" bug introduced in version 1.30-beta
+    (closes: #354081).
+
+ -- Romain Francoise <rfrancoise@debian.org>  Sat, 25 Feb 2006 19:23:30 +0100
+
 x2x (1.27.svn.20060214-1) unstable; urgency=low
 
   * New upstream (SVN checkout of the trunk), adds support for DPMS and
