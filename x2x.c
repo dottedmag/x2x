@@ -363,6 +363,14 @@ static HWND hWndSave;
 static HINSTANCE m_instance;
 #endif
 
+#ifdef DEBUG
+#define debug printf
+#else
+void debug(const char* fmt, ...)
+{
+}
+#endif
+
 #ifdef WIN_2_X
 
 #define MAX_WIN_ARGS 40
@@ -521,9 +529,7 @@ char **argv;
   int     eventno;
   char    *keyname, *argptr;
 
-#ifdef DEBUG
-  printf ("programStr = %s\n", programStr);
-#endif
+  debug("programStr = %s\n", programStr);
 
   /* Clear button map */
   for (button = 0; button <= N_BUTTONS; button++)
@@ -539,9 +545,7 @@ char **argv;
       if (doEdge == EDGE_NONE) doEdge = EDGE_WEST;
       doCapsLkHack = True;
 
-#ifdef DEBUG
-      printf ("fromDpyName = %s\n", fromDpyName);
-#endif
+      debug("fromDpyName = %s\n", fromDpyName);
     } else
       /* Note this else will qualify the if below... */
 #endif /* WIN_2_X */
@@ -549,122 +553,92 @@ char **argv;
       if (++arg >= argc) Usage();
       fromDpyName = argv[arg];
 
-#ifdef DEBUG
-      printf ("fromDpyName = %s\n", fromDpyName);
-#endif
+      debug("fromDpyName = %s\n", fromDpyName);
     } else if (!strcasecmp(argv[arg], "-to")) {
       if (++arg >= argc) Usage();
       toDpyName = argv[arg];
 
-#ifdef DEBUG
-      printf ("toDpyName = %s\n", toDpyName);
-#endif
+      debug("toDpyName = %s\n", toDpyName);
     } else if (!strcasecmp(argv[arg], "-font")) {
       if (++arg >= argc) Usage();
       fontName = argv[arg];
 
-#ifdef DEBUG
-      printf ("fontName = %s\n", fontName);
-#endif
+      debug("fontName = %s\n", fontName);
     } else if (!strcasecmp(argv[arg], "-label")) {
       if (++arg >= argc) Usage();
       label = argv[arg];
 
-#ifdef DEBUG
-      printf ("label = %s\n", label);
-#endif
+      debug("label = %s\n", label);
     } else if (!strcasecmp(argv[arg], "-geometry")) {
       if (++arg >= argc) Usage();
       geomStr = argv[arg];
 
-#ifdef DEBUG
-      printf ("geometry = %s\n", geomStr);
-#endif
+      debug("geometry = %s\n", geomStr);
     } else if (!strcasecmp(argv[arg], "-wait")) {
       waitDpy = True;
 
-#ifdef DEBUG
-      printf("will wait for displays\n");
-#endif
+      debug("will wait for displays\n");
     } else if (!strcasecmp(argv[arg], "-big")) {
       doBig = True;
 
-#ifdef DEBUG
-      printf("will create big window on from display\n");
-#endif
+      debug("will create big window on from display\n");
     } else if (!strcasecmp(argv[arg], "-nomouse")) {
       doMouse = False;
 
-#ifdef DEBUG
-      printf("will not capture mouse (eek!)\n");
-#endif
+      debug("will not capture mouse (eek!)\n");
     } else if (!strcasecmp(argv[arg], "-nopointermap")) {
       doPointerMap = False;
 
-#ifdef DEBUG
-      printf("will not do pointer mapping\n");
-#endif
+      debug("will not do pointer mapping\n");
     } else if (!strcasecmp(argv[arg], "-north")) {
       doEdge = EDGE_NORTH;
-#ifdef DEBUG
-      printf("\"from\" is on the north side of \"to\"\n");
-#endif
+
+      debug("\"from\" is on the north side of \"to\"\n");
     } else if (!strcasecmp(argv[arg], "-south")) {
       doEdge = EDGE_SOUTH;
-#ifdef DEBUG
-      printf("\"from\" is on the south side of \"to\"\n");
-#endif
+
+      debug("\"from\" is on the south side of \"to\"\n");
     } else if (!strcasecmp(argv[arg], "-east")) {
       doEdge = EDGE_EAST;
-#ifdef DEBUG
-      printf("\"from\" is on the east side of \"to\"\n");
-#endif
+
+      debug("\"from\" is on the east side of \"to\"\n");
     } else if (!strcasecmp(argv[arg], "-west")) {
       doEdge = EDGE_WEST;
-#ifdef DEBUG
-      printf("\"from\" is on the west side of \"to\"\n");
-#endif
+
+      debug("\"from\" is on the west side of \"to\"\n");
     } else if (!strcasecmp(argv[arg], "-nosel")) {
       doSel = False;
-#ifdef DEBUG
-      printf("will not transmit X selections between displays\n");
-#endif
+
+      debug("will not transmit X selections between displays\n");
     } else if (!strcasecmp(argv[arg], "-noautoup")) {
       doAutoUp = False;
-#ifdef DEBUG
-      printf("will not automatically lift keys and buttons\n");
-#endif
+
+      debug("will not automatically lift keys and buttons\n");
     } else if (!strcasecmp(argv[arg], "-buttonblock")) {
       doBtnBlock = True;
-#ifdef DEBUG
-      printf("mouse buttons down will block disconnects\n");
-#endif
+
+      debug("mouse buttons down will block disconnects\n");
     } else if (!strcasecmp(argv[arg], "-capslockhack")) {
       doCapsLkHack = True;
-#ifdef DEBUG
-      printf("behavior of CapsLock will be hacked\n");
-#endif
+
+      debug("behavior of CapsLock will be hacked\n");
     } else if (!strcasecmp(argv[arg], "-dpmsmouse")) {
       doDpmsMouse = True;
-#ifdef DEBUG
-      printf("mouse movement wakes monitor\n");
-#endif
+
+      debug("mouse movement wakes monitor\n");
     } else if (!strcasecmp(argv[arg], "-offset")) {
       if (++arg >= argc) Usage();
       logicalOffset = atoi(argv[arg]);
-#ifdef DEBUG
-      printf("logicalOffset %d\n", logicalOffset);
-#endif
+
+      debug("logicalOffset %d\n", logicalOffset);
     } else if (!strcasecmp(argv[arg], "-clipcheck")) {
       doClipCheck = True;
-#ifdef DEBUG
-      printf("Clipboard type will be checked for XA_STRING\n");
-#endif
+
+      debug("Clipboard type will be checked for XA_STRING\n");
     } else if (!strcasecmp(argv[arg], "-nocapslockhack")) {
       doCapsLkHack = False;
-#ifdef DEBUG
-      printf("behavior of CapsLock will not be hacked\n");
-#endif
+
+      debug("behavior of CapsLock will not be hacked\n");
     } else if (!strcasecmp(argv[arg], "-sticky")) {
       if (++arg >= argc) Usage();
       if ((keysym = XStringToKeysym(argv[arg])) != NoSymbol) {
@@ -672,9 +646,8 @@ char **argv;
 	pNewSticky->pNext  = stickies;
 	pNewSticky->keysym = keysym;
 	stickies = pNewSticky;
-#ifdef DEBUG
-	printf("will press/release sticky key: %s\n", argv[arg]);
-#endif
+
+	debug("will press/release sticky key: %s\n", argv[arg]);
       } else {
 	printf("x2x: warning: can't translate %s\n", argv[arg]);
       }
@@ -688,9 +661,8 @@ char **argv;
 	    Usage();
 	else
 	{
-#ifdef DEBUG
-	    printf("will map button %d to keysyms '%s'\n", button, argv[arg]);
-#endif
+	    debug("will map button %d to keysyms '%s'\n", button, argv[arg]);
+
 	    argptr  = argv[arg];
 	    eventno = 0;
 	    while ((keyname = strtok(argptr, " \t\n\r")) != NULL)
@@ -708,9 +680,8 @@ char **argv;
 	}
     } else if (!strcasecmp(argv[arg], "-resurface")) {
       doResurface = True;
-#ifdef DEBUG
-      printf("will resurface the trigger window when obscured\n");
-#endif
+
+      debug("will resurface the trigger window when obscured\n");
     } else if (!strcasecmp(argv[arg], "-shadow")) {
       if (++arg >= argc) Usage();
       pShadow = (PSHADOW)malloc(sizeof(SHADOW));
@@ -795,10 +766,8 @@ int ErrorHandler(Display *disp, XErrorEvent *event) {
   buff = malloc(bufflen);
 
   XGetErrorText(disp,event->error_code,buff,bufflen);
-#ifdef DEBUG
-  printf("x2x:ErrHandler(): Display:`%s` \t error_code:`%i` \n",
+  debug("x2x:ErrHandler(): Display:`%s` \t error_code:`%i` \n",
        XDisplayName(NULL),event->error_code);
-#endif
   printf(" %s \n",buff);
   free(buff);
   return True;
@@ -1334,9 +1303,7 @@ PDPYINFO pDpyInfo;
   propWin = XCreateWindow(toDpy, toRoot, 0, 0, 1, 1, 0, 0, InputOutput,
 			  CopyFromParent, 0, NULL);
   pDpyInfo->toDpyXtra.propWin = propWin;
-#ifdef DEBUG
-  printf("Create window %x on todpy\n", (unsigned int)propWin);
-#endif
+  debug("Create window %x on todpy\n", (unsigned int)propWin);
   /* initialize pointer mapping */
   RefreshPointerMapping(toDpy, pDpyInfo);
 
@@ -1367,9 +1334,7 @@ PDPYINFO pDpyInfo;
       XSelectInput(toDpy, propWin, PropertyChangeMask);
     XSetSelectionOwner(toDpy, XA_PRIMARY, propWin, CurrentTime);
 #ifdef WIN_2_X
-#ifdef DEBUG
-    printf("SelectionOwner to propWin %x\n", (unsigned int)propWin);
-#endif
+    debug("SelectionOwner to propWin %x\n", (unsigned int)propWin);
     pDpyInfo->owntoXsel = 1;
     pDpyInfo->expectSelNotify = 0;
     pDpyInfo->expectOwnClip = 0;
@@ -1422,9 +1387,7 @@ PDPYINFO pDpyInfo;
     XFlush(pShadow->dpy);
   }
 
-#ifdef DEBUG
-  printf("connecting\n");
-#endif
+  debug("connecting\n");
   pDpyInfo->mode = X2X_CONNECTED;
 
 #ifdef WIN_2_X
@@ -1448,9 +1411,7 @@ PDPYINFO pDpyInfo;
   Display *fromDpy = pDpyInfo->fromDpy;
   PDPYXTRA pDpyXtra;
 
-#ifdef DEBUG
-  printf("disconnecting\n");
-#endif
+  debug("disconnecting\n");
   pDpyInfo->mode = X2X_DISCONNECTED;
 #ifdef WIN_2_X
   assert (fromDpy != fromWin);
@@ -1552,10 +1513,8 @@ PDPYINFO pDpyInfo;
     /* have handler */
     return ((*handler)(dpy, pDpyInfo, &ev));
   } else {
-#ifdef DEBUG
-    printf("no handler for window 0x%x, event type %d\n",
+    debug("no handler for window 0x%x, event type %d\n",
 	   (unsigned int)pEv->window, pEv->type);
-#endif
   } /* END if/else */
 
   return False;
@@ -1720,25 +1679,17 @@ XButtonEvent *pEv;
   switch (pDpyInfo->mode) {
   case X2X_DISCONNECTED:
     pDpyInfo->mode = X2X_AWAIT_RELEASE;
-#ifdef DEBUG
-    printf("awaiting button release before connecting\n");
-#endif
+    debug("awaiting button release before connecting\n");
     break;
   case X2X_CONNECTED:
-#ifdef DEBUG
-	  printf("Got button %d, max is %d (%d)\n", pEv->button, N_BUTTONS, nButtons);
-#endif
+	  debug("Got button %d, max is %d (%d)\n", pEv->button, N_BUTTONS, nButtons);
       if ((pEv->button <= N_BUTTONS) &&
 	  (buttonmap[pEv->button][0] != NoSymbol))
       {
-#ifdef DEBUG
-		  printf("Mapped!\n");
-#endif
+		  debug("Mapped!\n");
 	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
 	  {
-#ifdef DEBUG
-	      printf("Button %d is mapped, sending keys: ", pEv->button);
-#endif
+	      debug("Button %d is mapped, sending keys: ", pEv->button);
 	      for (eventno = 0;
 		   (keysym = buttonmap[pEv->button][eventno]) != NoSymbol;
 		   eventno++)
@@ -1747,26 +1698,18 @@ XButtonEvent *pEv;
 		      XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
 		      XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
 		      XFlush(pShadow->dpy);
-#ifdef DEBUG
-		      printf(" (0x%04X)", keycode);
-#endif
+		      debug(" (0x%04X)", keycode);
 		  }
-#ifdef DEBUG
 		  else
-		      printf(" (no code)");
-#endif
+		      debug(" (no code)");
 	      }
-#ifdef DEBUG
-	      printf("\n");
-#endif
+	      debug("\n");
 	  }
       } else if (pEv->button <= nButtons) {
 	  toButton = pDpyInfo->inverseMap[pEv->button];
 	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
 	      XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
-#ifdef DEBUG
-		printf("from button %d down, to button %d down\n", pEv->button,toButton);
-#endif
+		debug("from button %d down, to button %d down\n", pEv->button,toButton);
 		XFlush(pShadow->dpy);
 	  } /* END for */
 	  if (doAutoUp)
@@ -1783,15 +1726,11 @@ XButtonEvent *pEv;
       case Button4: state &= ~Button4Mask; break;
       case Button5: state &= ~Button5Mask; break;
     default:
-#ifdef DEBUG
-      printf("unknown button %d\n", pEv->button);
-#endif
+      debug("unknown button %d\n", pEv->button);
       break;
     } /* END switch button */
     if (state) { /* then more than one button pressed */
-#ifdef DEBUG
-      printf("awaiting button release before disconnecting\n");
-#endif
+      debug("awaiting button release before disconnecting\n");
       pDpyInfo->mode = X2X_CONN_RELEASE;
     }
     break;
@@ -1818,9 +1757,7 @@ XButtonEvent *pEv;
 	  toButton = pDpyInfo->inverseMap[pEv->button];
 	  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
 		XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
-#ifdef DEBUG
-		printf("from button %d up, to button %d up\n", pEv->button, toButton);
-#endif
+		debug("from button %d up, to button %d up\n", pEv->button, toButton);
 		XFlush(pShadow->dpy);
 	  } /* END for */
 	  if (doAutoUp)
@@ -1840,9 +1777,7 @@ XButtonEvent *pEv;
     case Button4: state &= ~Button4Mask; break;
     case Button5: state &= ~Button5Mask; break;
     default:
-#ifdef DEBUG
-      printf("unknown button %d\n", pEv->button);
-#endif
+      debug("unknown button %d\n", pEv->button);
       break;
     } /* END switch button */
     if (!state) { /* all buttons up: time to (dis)connect */
@@ -1970,9 +1905,7 @@ XSelectionRequestEvent *pEv;
     utf8string = pDpyInfo->toDpyUtf8String;
   }
 
-#ifdef DEBUG
-    printf("selection request\n");
-#endif
+    debug("selection request\n");
 
   /* bribe me to support more general selection requests,
      or send me the code to do it. */
@@ -2014,9 +1947,7 @@ XPropertyEvent *pEv;
 {
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
 
-#ifdef DEBUG
-    printf("property notify\n");
-#endif
+    debug("property notify\n");
 
   if (pEv->atom == pDpyXtra->pingAtom) { /* acking a ping */
     pDpyXtra->pingInProg = False;
@@ -2053,9 +1984,7 @@ XSelectionEvent *pEv;
 
 #define DEFAULT_PROP_SIZE 1024L
 
-#ifdef DEBUG
-  printf("selection notify\n");
-#endif
+  debug("selection notify\n");
 
   if (dpy == pDpyInfo->fromDpy) {
     utf8string = pDpyInfo->fromDpyUtf8String;
@@ -2134,9 +2063,7 @@ XSelectionClearEvent *pEv;
   Display  *otherDpy;
   PDPYXTRA pDpyXtra, pOtherXtra;
 
-#ifdef DEBUG
-    printf("selection clear\n");
-#endif
+    debug("selection clear\n");
 
   if (pEv->selection == XA_PRIMARY) {
     /* track primary selection */
@@ -2182,9 +2109,7 @@ Display             *dpy;
 PDPYINFO            pDpyInfo;
 XMappingEvent       *pEv;
 {
-#ifdef DEBUG
-  printf("mapping\n");
-#endif
+  debug("mapping\n");
 
   switch (pEv->request) {
   case MappingModifier:
@@ -2249,15 +2174,11 @@ PDPYINFO pDpyInfo;
 	if (type == FAKE_KEY) { /* key goes up */
 	  if ((keycode = XKeysymToKeycode(pShadow->dpy, pFake->thing))) {
 	    XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
-#ifdef DEBUG
-	    printf("key 0x%x up\n", pFake->thing);
-#endif
+	    debug("key 0x%x up\n", pFake->thing);
 	  } /* END if */
 	} else { /* button goes up */
 	  XTestFakeButtonEvent(pShadow->dpy, pFake->thing, False, 0);
-#ifdef DEBUG
-	  printf("button %d up\n", pFake->thing);
-#endif
+	  debug("button %d up\n", pFake->thing);
 	} /* END if/else */
       } /* END for */
 
@@ -2289,17 +2210,13 @@ PDPYINFO            pDpyInfo;
     } /* END for */
 
     nButtons = MIN(N_BUTTONS, XGetPointerMapping(dpy, buttonMap, N_BUTTONS));
-#ifdef DEBUG
-	printf("got button mapping: %d items\n", nButtons);
-#endif
+	debug("got button mapping: %d items\n", nButtons);
 #ifdef WIN_2_X
     pDpyInfo->nXbuttons = nButtons;
 #endif
     if (doPointerMap) {
       for (buttCtr = 0; buttCtr < nButtons; ++buttCtr) {
-#ifdef DEBUG
-	printf("button %d -> %d\n", buttCtr + 1, buttonMap[buttCtr]);
-#endif
+	debug("button %d -> %d\n", buttCtr + 1, buttonMap[buttCtr]);
 	if (buttonMap[buttCtr] <= N_BUTTONS)
 	  pDpyInfo->inverseMap[buttonMap[buttCtr]] = buttCtr + 1;
       } /* END for */
@@ -2315,9 +2232,7 @@ PDPYINFO            pDpyInfo;
 /* Want the Edge window and not the Big one */
 void MoveWindowToEdge(PDPYINFO pDpyInfo) {
   if (pDpyInfo->onedge) return;
-#ifdef DEBUG
-  printf("MoveWindowToEdge\n");
-#endif
+  debug("MoveWindowToEdge\n");
 
   SetWindowPos(pDpyInfo->bigwindow, HWND_BOTTOM,
 	       pDpyInfo->screenRect.left, pDpyInfo->screenRect.top,
@@ -2341,24 +2256,18 @@ int MoveWindowToScreen(PDPYINFO pDpyInfo)
   LPINPUT pInputs;
 
   if(!pDpyInfo->onedge) return 1;
-#ifdef DEBUG
-  printf("MoveWindowToScreen\n");
-#endif
+  debug("MoveWindowToScreen\n");
 
   hWndSave = GetForegroundWindow();
 
   if ((notfg = (SetForegroundWindow(pDpyInfo->bigwindow) == 0))) {
-#ifdef DEBUG
-    printf("Did not become foreground\n");
-#endif
+    debug("Did not become foreground\n");
 
     /* This code thanks to Thomas Chadwick */
     /* Fakes that the user clicked the mouse to move the focus */
     /* This is to deal with the XP and 2000 behaviour that attempts to */
     /* prevent an application from stealing the focus */
-#ifdef DEBUG
-    printf("Using SendInput to synthesize a mouse click\n");
-#endif
+    debug("Using SendInput to synthesize a mouse click\n");
 
     pInputs = (LPINPUT) malloc (2*sizeof(INPUT));
 
@@ -2379,9 +2288,7 @@ int MoveWindowToScreen(PDPYINFO pDpyInfo)
     pInputs[1].mi.dwExtraInfo = 0;
 
     if (SendInput(2, pInputs, sizeof(INPUT)) == 0) {
-#ifdef DEBUG
-      printf("SendInput failed\n");
-#endif
+      debug("SendInput failed\n");
       free(pInputs);
       return 0;
     }
@@ -2409,20 +2316,16 @@ int x,y;
     XFlush(pShadow->dpy);
   }
   
-#ifdef DEBUG
-  printf("connecting (Win2x)\n");
-#endif
+  debug("connecting (Win2x)\n");
   pDpyInfo->mode = X2X_CONNECTED;
 
   if (!pDpyInfo->onedge) return;
 
   if (MoveWindowToScreen(pDpyInfo)) {
-#ifdef DEBUG
-    printf("Warp Cursor: %d,%d -> %d, %d\n",
+    debug("Warp Cursor: %d,%d -> %d, %d\n",
 	   x,y,
 	   (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
 	   y);
-#endif
 
     
     
@@ -2449,18 +2352,14 @@ PDPYINFO pDpyInfo;
 int x,y;
 {
 
-#ifdef DEBUG
-  printf("disconnecting\n");
-#endif
+  debug("disconnecting\n");
   pDpyInfo->mode = X2X_DISCONNECTED;
 
   /* If we own the X selection, then windows has it! */
   /* otherwise transfer the info by asking the owning X window to */
   /* tell us (via ProcessSelectNotifyW) */
   if (!pDpyInfo->owntoXsel) {
-#ifdef DEBUG
-    printf("Ask X for -to selection\n");
-#endif
+    debug("Ask X for -to selection\n");
     XConvertSelection(pDpyInfo->toDpy, XA_PRIMARY, XA_STRING,
 		      XA_PRIMARY, pDpyInfo->toDpyXtra.propWin, CurrentTime);
     XFlush(pDpyInfo->toDpy);
@@ -2468,12 +2367,10 @@ int x,y;
   }
 
   if (x >= 0) {
-#ifdef DEBUG
-    printf("Warp Cursor: %d,%d -> %d, %d\n",
+    debug("Warp Cursor: %d,%d -> %d, %d\n",
 	   x,y,
 	   (doEdge == EDGE_EAST) ? pDpyInfo->fromWidth - 2 : 2,
 	   y);
-#endif
     if (pDpyInfo->vertical)
     {
       SetCursorPos(x + pDpyInfo->monitorRect.left + logicalOffset, (doEdge == EDGE_SOUTH) ? pDpyInfo->monitorRect.bottom - 2 : pDpyInfo->monitorRect.top);
@@ -2511,9 +2408,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       return 0;
 
     case WM_TIMER:
-#ifdef DEBUG
-      printf("#");
-#endif
+      debug("#");
 #if 0
       if (wParam == m_emulate3ButtonsTimer)
       {
@@ -2541,29 +2436,21 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
       if (GetFocus() != hwnd) {
 	if (pDpyInfo == NULL) {
-#ifdef DEBUG
-	  printf("No focus and pDpyInfo NULL\n");
-#endif
+	  debug("No focus and pDpyInfo NULL\n");
 	  return 0;
 	}
 	if (pDpyInfo->onedge) {
-#ifdef DEBUG
-	  printf("No focus and currently on edge\n");
-#endif
+	  debug("No focus and currently on edge\n");
 	  return 0;
 	}
 	if (hwnd == pDpyInfo->bigwindow) {
 	  /* Ok, event for the bigwindow, but no focus -> take it */
-#ifdef DEBUG
-	  printf("No focus on bigwindow mouse event, grab it\n");
-#endif
+	  debug("No focus on bigwindow mouse event, grab it\n");
 	  SetForegroundWindow(pDpyInfo->bigwindow);
 	  SetFocus(pDpyInfo->bigwindow);
 	}
-#ifdef DEBUG
 	else
-	  printf("No focus, not on edge, not bigwindow\n");
-#endif
+	  debug("No focus, not on edge, not bigwindow\n");
       }
 
       pt.x = GET_X_LPARAM(lParam);
@@ -2596,15 +2483,11 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       {
 	if(hwnd == pDpyInfo->edgewindow)
 	{
-#ifdef DEBUG
-	  printf("onedge mouse connect\n");
-#endif
+	  debug("onedge mouse connect\n");
 	  DoWinConnect(pDpyInfo, x,y);
 	}
 	else {
-#ifdef DEBUG
-	  printf("onedge mouse move to non edge window ");
-#endif
+	  debug("onedge mouse move to non edge window ");
 	  DoWinConnect(pDpyInfo, x, y);
 	}
 	return 0;
@@ -2625,11 +2508,9 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	if (delta < 0) delta = -delta;
 	if (delta > pDpyInfo->unreasonableDelta) {
 	  /* Guess that the warp failed and try it again... */
-#ifdef DEBUG
-	  printf("Retry warp to (%d, %d)\n",
+	  debug("Retry warp to (%d, %d)\n",
 		 (doEdge == EDGE_EAST) ? 1 : pDpyInfo->fromWidth - 3,
 		 y);
-#endif
     if (pDpyInfo->vertical)
     {
 	    SetCursorPos(x, (doEdge == EDGE_SOUTH) ? 1 : pDpyInfo->fromHeight - 3);
@@ -2655,11 +2536,9 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
       wdelta = pDpyInfo->wdelta + zDelta;
 
-#ifdef DEBUG
-      printf("Wheel moved to new delta %d (%s window)\n", wdelta,
+      debug("Wheel moved to new delta %d (%s window)\n", wdelta,
 	     (hwnd == pDpyInfo->edgewindow) ? "edge" :
 	     (hwnd == pDpyInfo->bigwindow) ? "big" : "other");
-#endif
 
       while (wdelta >= WHEEL_DELTA) {
 	/* Scroll up by sending Button 4 */
@@ -2684,9 +2563,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     {
 #if 0
       if (pDpyInfo->winSSave) {
-#ifdef DEBUG
-	printf("Attempt to restore from screen saver (key)!\n");
-#endif
+	debug("Attempt to restore from screen saver (key)!\n");
 	if (!pDpyInfo->onedge) {
 	  SetWindowPos(pDpyInfo->bigwindow, HWND_TOPMOST,
 		       pDpyInfo->screenRect.left, pDpyInfo->screenRect.top,
@@ -2758,9 +2635,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       if(doEdge && (hwnd == pDpyInfo->edgewindow))
       {
 	GetCursorPos(&pt);
-#ifdef DEBUG
-	printf("Activated by action: WM_SETCURSOR\n");
-#endif
+	debug("Activated by action: WM_SETCURSOR\n");
 	DoWinConnect(pDpyInfo, pt.x, pt.y);
       }
       return DefWindowProc(hwnd, iMsg, wParam, lParam);
@@ -2782,10 +2657,8 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	    pDpyInfo->winSelText = malloc(len + 10);
 	    if (pDpyInfo->winSelText != NULL)
 	      strcpy(pDpyInfo->winSelText, lptstr);
-#ifdef DEBUG
 	    /* XXX mdh - hope this does (null) as expected! */
-	    printf("Windows clipboard changed to %s\n", pDpyInfo->winSelText);
-#endif
+	    debug("Windows clipboard changed to %s\n", pDpyInfo->winSelText);
 	  }
 	  GlobalUnlock(hglb);
 	  CloseClipboard();
@@ -2799,21 +2672,17 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	    if (pDpyInfo->expectOwnClip == (len+1)) {
 	      /* Its ours stop looking */
 	      pDpyInfo->expectOwnClip = 0;
-#ifdef DEBUG
-	      printf("Saw own addition to clipboard\n");
+	      debug("Saw own addition to clipboard\n");
 	    } else {
-		printf("Oops. expectOwrClip %d with len %d\n",
+		debug("Oops. expectOwrClip %d with len %d\n",
 		       pDpyInfo->expectOwnClip, len);
-#endif
 	    }
 	  } else {
 	    /* This can race during creation */
 	    /* but we will claim selection in the init routine */
 	    if (pDpyInfo->toDpyXtra.propWin != 0) {
-#ifdef DEBUG
-	      printf("Selection Owner to %x\n",
+	      debug("Selection Owner to %x\n",
 		     (unsigned int)pDpyInfo->toDpyXtra.propWin);
-#endif
 	      XSetSelectionOwner(pDpyInfo->toDpy, XA_PRIMARY,
 				 pDpyInfo->toDpyXtra.propWin, CurrentTime);
 	      pDpyInfo->owntoXsel = 1;
@@ -2850,9 +2719,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     }
 
     case WM_SYSCOMMAND:
-#ifdef DEBUG
-      printf("WM_SYSCOMMAND with wParam %d (0x%x)\n", wParam, wParam);
-#endif
+      debug("WM_SYSCOMMAND with wParam %d (0x%x)\n", wParam, wParam);
       if (wParam == SC_SCREENSAVE) {
 	PSHADOW   pShadow;
 	pDpyInfo->winSSave = 1;
@@ -2901,9 +2768,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
       return 1;
   }
 
-#ifdef DEBUG
-  printf("Unused message: %d (0x%04x)\n", iMsg, iMsg);
-#endif
+  debug("Unused message: %d (0x%04x)\n", iMsg, iMsg);
   return DefWindowProc(hwnd, iMsg, wParam, lParam);
 }
 
@@ -3012,10 +2877,8 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
       toButton = pDpyInfo->inverseMap[button];
       for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
 	XTestFakeButtonEvent(pShadow->dpy, toButton, down, 0);
-#ifdef DEBUG
-	printf("from button %d %s, to button %d %s\n",
+	debug("from button %d %s, to button %d %s\n",
 	       button, down ? "down":"up", toButton, down ? "down":"up");
-#endif
 	XFlush(pShadow->dpy);
       } /* END for */
       if (doAutoUp)
@@ -3039,17 +2902,13 @@ void SendButtonClick(pDpyInfo, button)
       for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
 	XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
 	XTestFakeButtonEvent(pShadow->dpy, toButton, False, 0);
-#ifdef DEBUG
-	printf("Click from button %d, to button %d\n",
+	debug("Click from button %d, to button %d\n",
 	       button, toButton);
-#endif
 	XFlush(pShadow->dpy);
       } /* END for */
-#ifdef DEBUG
     else
-      printf("to only has %d buttons, cant clikc from %d -> to %d\n",
+      debug("to only has %d buttons, cant clikc from %d -> to %d\n",
 	     pDpyInfo->nXbuttons, button, toButton);
-#endif
   }
 }
 
@@ -3098,9 +2957,7 @@ DWORD keyData;
 
   /* Attempt to discard spurious keys and 'fake' loss of focus */
   if (pDpyInfo->onedge && down) {
-#ifdef DEBUG
-    printf("Ignore key while onedge\n");
-#endif
+    debug("Ignore key while onedge\n");
     return;
   }
   // if virtkey found in mapping table, send X equivalent
@@ -3114,24 +2971,20 @@ DWORD keyData;
 
 #ifdef DEBUG
   if (GetKeyNameText(  keyData,keyname, 31)) {
-    printf("Process key: %s (vk %d keyData %04x): ", keyname, virtkey, (unsigned int)keyData);
+    debug("Process key: %s (vk %d keyData %04x): ", keyname, virtkey, (unsigned int)keyData);
   };
 #endif
 
   if (doCapsLkHack && (virtkey == VK_CAPITAL)) {
     /* We rely on Windows to process Caps Lock so don't send to X */
-#ifdef DEBUG
-    printf(" Ignore Caps Lock\n");
-#endif
+    debug(" Ignore Caps Lock\n");
     return;
   }
 
   /* Special cases */
   if ((virtkey == VK_HOME) || (virtkey == VK_END)) {
     if (GetKeyState(VK_RMENU) & 0x8000) { // right ALT down
-#ifdef DEBUG
-      printf("Magic key \n");
-#endif
+      debug("Magic key \n");
       SendKeyEvent(pDpyInfo, XK_Alt_R, False, False, 0);
       if (virtkey == VK_END)
 	exit(0); // Is there a proper way?
@@ -3145,30 +2998,22 @@ DWORD keyData;
 
   if (kas.releaseModifiers & KEYMAP_LCONTROL) {
     SendKeyEvent(pDpyInfo, XK_Control_L, False, False, 0);
-#ifdef DEBUG
-    printf("fake L Ctrl raised\n");
-#endif
+    debug("fake L Ctrl raised\n");
   }
 
   if (kas.releaseModifiers & KEYMAP_LALT) {
     SendKeyEvent(pDpyInfo, XK_Alt_L, False, False, 0);
-#ifdef DEBUG
-    printf("fake L Alt raised\n");
-#endif
+    debug("fake L Alt raised\n");
   }
 
   if (kas.releaseModifiers & KEYMAP_RCONTROL) {
     SendKeyEvent(pDpyInfo, XK_Control_R, False, False, 0);
-#ifdef DEBUG
-    printf("fake R Ctrl raised\n");
-#endif
+    debug("fake R Ctrl raised\n");
   }
 
   if (kas.releaseModifiers & KEYMAP_RALT) {
     SendKeyEvent(pDpyInfo, XK_Alt_R, False, False, 0);
-#ifdef DEBUG
-    printf("fake R Alt raised\n");
-#endif
+    debug("fake R Alt raised\n");
   }
 
   /* NOTE: confusingly the 'keycodes' array actually contains keysyms */
@@ -3176,44 +3021,32 @@ DWORD keyData;
   if (doCapsLkHack) {   /* Arguably this should be the dafault */
     winShift = (((GetKeyState(VK_LSHIFT) & 0x8000) ? 1 : 0) |
 		((GetKeyState(VK_RSHIFT) & 0x8000) ? 2 : 0));
-#ifdef DEBUG
-    printf(" winShift %d ", winShift);
-#endif
+    debug(" winShift %d ", winShift);
   }
   for (i = 0; kas.keycodes[i] != XK_VoidSymbol && i < MaxKeysPerKey; i++) {
     SendKeyEvent(pDpyInfo, kas.keycodes[i], down, doCapsLkHack, winShift);
-#ifdef DEBUG
-      printf("Sent keysym %04x (%s)\n",
+      debug("Sent keysym %04x (%s)\n",
 	     (int)kas.keycodes[i], down ? "press" : "release");
-#endif
   }
 
   if (kas.releaseModifiers & KEYMAP_RALT) {
     SendKeyEvent(pDpyInfo, XK_Alt_R, True, False, 0);
-#ifdef DEBUG
-    printf("fake R Alt pressed\n");
-#endif
+    debug("fake R Alt pressed\n");
   }
 
   if (kas.releaseModifiers & KEYMAP_RCONTROL) {
     SendKeyEvent(pDpyInfo, XK_Control_R, True, False, 0);
-#ifdef DEBUG
-    printf("fake R Ctrl pressed\n");
-#endif
+    debug("fake R Ctrl pressed\n");
   }
 
   if (kas.releaseModifiers & KEYMAP_LALT) {
     SendKeyEvent(pDpyInfo, XK_Alt_L, False, False, 0);
-#ifdef DEBUG
-    printf("fake L Alt pressed\n");
-#endif
+    debug("fake L Alt pressed\n");
   }
 
   if (kas.releaseModifiers & KEYMAP_LCONTROL) {
     SendKeyEvent(pDpyInfo, XK_Control_L, False, False, 0);
-#ifdef DEBUG
-    printf("fake L Ctrl pressed\n");
-#endif
+    debug("fake L Ctrl pressed\n");
   }
 }
 
@@ -3241,14 +3074,10 @@ void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down,
 	  if (XKeycodeToKeysym(pShadow->dpy,keycode,winShift ? 0:1) == keysym){
 	    /* But does with shift inverted */
 	    invShift = 1;
-#ifdef DEBUG
-	    printf("Invert shift ");
-#endif
+	    debug("Invert shift ");
 	  }
-#ifdef DEBUG
 	  else
-	    printf(" keysym not keycode 0 or 1 hope for the best ");
-#endif
+	    debug(" keysym not keycode 0 or 1 hope for the best ");
 	}
       }
 
@@ -3269,30 +3098,22 @@ void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down,
 
 	if (winShift == 0) { // Need to press, choose left
 	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, True, 0);
-#ifdef DEBUG
-	  printf("LSdown ");
-#endif
+	  debug("LSdown ");
 	} else {
 	  // Release whichever is pressed or both
 #ifdef USING_RSHIFT
 	  if (winShift & 1) {
 	    	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, False, 0);
-#ifdef DEBUG
-		  printf("LSup ");
-#endif
+		  debug("LSup ");
 	  }
 	  if (winShift & 2) {
 	    	  XTestFakeKeyEvent(pShadow->dpy, toShiftRCode, False, 0);
-#ifdef DEBUG
-		  printf("RSup ");
-#endif
+		  debug("RSup ");
 	  }
 #else /* not USING_RSHIFT */
 	  /* Since we only ever send Left shifts, thats all we need release */
 	  XTestFakeKeyEvent(pShadow->dpy, toShiftLCode, False, 0);
-#ifdef DEBUG
-	  printf("LSup ");
-#endif
+	  debug("LSup ");
 #endif /* USING_RSHIFT */
 	}
 	XTestFakeKeyEvent(pShadow->dpy, keycode, down, 0);
@@ -3327,9 +3148,7 @@ PDPYINFO pDpyInfo;
 XSelectionClearEvent *pEv;
 {
 
-#ifdef DEBUG
-    printf("selection clear W\n");
-#endif
+    debug("selection clear W\n");
 
   if (pEv->selection == XA_PRIMARY) {
     pDpyInfo->owntoXsel = 0;
@@ -3347,9 +3166,7 @@ Display *dpy;
 PDPYINFO pDpyInfo;
 XSelectionRequestEvent *pEv;
 {
-#ifdef DEBUG
-  printf("selection request W\n");
-#endif
+  debug("selection request W\n");
 
   /* only do strings to PRIMARY */
   if ((pDpyInfo->winSelText == NULL) ||
@@ -3380,9 +3197,7 @@ XSelectionEvent *pEv;
 
 #define DEFAULT_PROP_SIZE 1024L
 
-#ifdef DEBUG
-  printf("selection notify\n");
-#endif
+  debug("selection notify\n");
   pDpyInfo->expectSelNotify = 0;
   /* property None indicates the source couldn't send anything */
   if (pEv->property != None) {
@@ -3413,20 +3228,14 @@ XSelectionEvent *pEv;
 	     (after == 0L) && (prop != None));
 	} /* END if got everything ... else ...*/
       } /* END if known type */
-#ifdef DEBUG
-      else printf("Bad prop: type %d, format %d, nitems %d, prop %d(%s)\n",
+      else debug("Bad prop: type %d, format %d, nitems %d, prop %d(%s)\n",
 		  (int)type, format, (int)nitems, (int)prop,
 		  (prop == None) ? "none": (char *)prop);
-#endif
     } /* END if got property */
-#ifdef DEBUG
-      else printf("Did not get property\n");
-#endif
+      else debug("Did not get property\n");
 
     if (success) { /* send bits to the Windows Clipboard */
-#ifdef DEBUG
-      printf("Send X selection to Windows Clipboard: %s\n", prop);
-#endif
+      debug("Send X selection to Windows Clipboard: %s\n", prop);
       if (OpenClipboard(pDpyInfo->edgewindow)) {
 	HGLOBAL hglbCopy;
 	EmptyClipboard();
