@@ -239,9 +239,14 @@ Mark Hayter (-fromwin code, thanks to the WinVNC sources)
 .br
 Addition of -north and -south options by Charles Briscoe-Smith
 <cpbs@debian.org>.
+.br
+Current maintaner is Mikhail Gusarov <dottedmag@dottedmag.net>
 .SH BUGS
 This software is experimental!  Heaven help you if your network
 connection should go down.  Caveat hacker.  TANSTAAFL.
+
+Nevertheless, bugtracker is at
+http://x2x.dottedmag.net/trac/do/newticket
 
 When using the -fromwin option if the Ctrl-Alt-Del keysequence is used
 while the mouse is forwarded to the X display then the Ctrl and Alt
