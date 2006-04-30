@@ -224,6 +224,12 @@ sticky option prevents autoup for the specified key.  Look in
 (remove the leading XK_).
 .TP
 .B \-label \fIlabel\fP
+.IP
+Override the label of the control window (useful when running over ssh).
+The label is the text displayed within the control window.
+.TP
+.B \-title \fItitle\fP
+.IP
 Override the title of the control window (useful when running over ssh).
 .IP
 .TP

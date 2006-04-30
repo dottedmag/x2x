@@ -333,6 +333,7 @@ static char    *toDpyName   = NULL;
 static char    *defaultFN   = "-*-times-bold-r-*-*-*-180-*-*-*-*-*-*";
 static char    *fontName    = "-*-times-bold-r-*-*-*-180-*-*-*-*-*-*";
 static char    *label       = NULL;
+static char    *title       = NULL;
 static char    *pingStr     = "PING"; /* atom for ping request */
 static char    *geomStr     = NULL;
 static Bool    waitDpy      = False;
@@ -569,6 +570,11 @@ char **argv;
       label = argv[arg];
 
       debug("label = %s\n", label);
+    } else if (!strcasecmp(argv[arg], "-title")) {
+      if (++arg > argc) Usage();
+      title = argv[arg];
+
+      debug("title = %s\n", title);
     } else if (!strcasecmp(argv[arg], "-geometry")) {
       if (++arg >= argc) Usage();
       geomStr = argv[arg];
@@ -731,6 +737,7 @@ static void Usage()
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
   printf("       -label <LABEL>\n");
+  printf("       -title <TITLE>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
 #ifdef WIN_2_X
   printf("       -offset [-]<pixel offset of \"to\">\n");
@@ -1204,10 +1211,13 @@ PDPYINFO pDpyInfo;
   xsh->flags       = (PPosition|PBaseSize|PWinGravity);
   XSetWMNormalHints(fromDpy, trigger, xsh);
 
-  windowName = (char *)malloc(strlen(programStr) + strlen(toDpyName) + 2);
-  strcpy(windowName, programStr);
-  strcat(windowName, " ");
-  strcat(windowName, toDpyName);
+  if (title) {
+    windowName = title;
+  } else {
+    windowName = (char *)malloc(strlen(programStr) + strlen(toDpyName) + 2);
+    sprintf(windowName, "%s %s", programStr, toDpyName);
+  }
+
   XStoreName(fromDpy, trigger, windowName);
   XSetIconName(fromDpy, trigger, windowName);
 
@@ -1238,7 +1248,9 @@ PDPYINFO pDpyInfo;
   }
 
   XFree((char *) xsh);
-  free(windowName);
+
+  if (!title)
+    free(windowName);
 #ifdef WIN_2_X
   }
 #endif
