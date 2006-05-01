@@ -21,7 +21,10 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-binary-arch:	build install
+binary-indep:
+	dh_testdir
+
+binary-arch: build install
 	dh_testdir
 	dh_testroot 
 	dh_installdebconf

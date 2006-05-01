@@ -1,3 +1,15 @@
+x2x (1.27.svn.20060501-1) unstable; urgency=low
+
+  * New upstream release:
+    + The maximum number of mouse buttons is now 20 (closes: #157082).
+    + The window title can now be set with the new -title option
+      (closes: #364202).
+
+  * debian/control: Bump Standards-Version to 3.7.0, no changes needed.
+  * debian/rules: Add empty binary-indep target.
+
+ -- Romain Francoise <rfrancoise@debian.org>  Mon,  1 May 2006 19:14:37 +0200
+
 x2x (1.27.svn.20060225-1) unstable; urgency=low
 
   * New upstream, includes a patch from yours truly fixing the "less
