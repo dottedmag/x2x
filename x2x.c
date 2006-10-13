@@ -297,6 +297,7 @@ typedef struct _shadow {
 /* sticky keys */
 typedef struct _sticky {
   struct _sticky *pNext;
+  Bool   isPress;
   KeySym keysym;
 } STICKY, *PSTICKY;
 
@@ -350,6 +351,7 @@ static PSTICKY stickies     = NULL;
 static Bool    doBtnBlock   = False;
 static Bool    doCapsLkHack = False;
 static Bool    doClipCheck  = False;
+static Bool    singleSticky = False;
 static Bool    doDpmsMouse  = False;
 static int     logicalOffset= 0;
 static int     nButtons     = 0;
@@ -650,6 +652,7 @@ char **argv;
       if ((keysym = XStringToKeysym(argv[arg])) != NoSymbol) {
         pNewSticky = (PSTICKY)malloc(sizeof(STICKY));
         pNewSticky->pNext  = stickies;
+        pNewSticky->isPress = True;
         pNewSticky->keysym = keysym;
         stickies = pNewSticky;
 
@@ -657,6 +660,9 @@ char **argv;
       } else {
         printf("x2x: warning: can't translate %s\n", argv[arg]);
       }
+    } else if (!strcasecmp(argv[arg], "-singlesticky")) {
+      singleSticky = True;
+      debug("behaviour of sticky keys will be single\n", argv[arg]);
     } else if (!strcasecmp(argv[arg], "-buttonmap")) {
       if (++arg >= argc) Usage();
       button = atoi(argv[arg]);
@@ -736,6 +742,7 @@ static void Usage()
   printf("       -clipcheck\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
+  printf("       -singlesticky\n");
   printf("       -label <LABEL>\n");
   printf("       -title <TITLE>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
@@ -1278,11 +1285,11 @@ PDPYINFO pDpyInfo;
 
     /* vertical conversion table */
     for (counter = 0; counter < fromHeight; ++counter)
-      yTable[counter] = (counter * toHeight) / fromHeight;
+      yTable[counter] = (counter * (toHeight - 1)) / (fromHeight - 1);
 
     /* horizontal conversion table entries */
     for (counter = 0; counter < fromWidth; ++counter)
-      xTable[counter] = (counter * toWidth) / fromWidth;
+      xTable[counter] = (counter * (toWidth - 1)) / (fromWidth - 1);
 
     /* adjustment for boundaries */
     if (vertical) {
@@ -1395,7 +1402,10 @@ PDPYINFO pDpyInfo;
   PSHADOW   pShadow;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    if (doDpmsMouse)
+    {
+      DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    }
     XFlush(pShadow->dpy);
   }
 
@@ -1853,8 +1863,22 @@ XKeyEvent *pEv;
       toShiftCode = XKeysymToKeycode(pShadow->dpy, XK_Shift_L);
       if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
         if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, True, 0);
-        XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
-        XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+        if( singleSticky )
+        {
+          // in singleSticky mode we ignore sticky button releases
+          if( bPress )
+          {
+            XTestFakeKeyEvent(pShadow->dpy, keycode, pSticky->isPress, 0);
+            pSticky->isPress = !pSticky->isPress;
+          }
+        }
+        else
+        {
+          // in non-singleSticky mode we process press/release normally
+          XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+          XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+        }
+
         if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, False, 0);
         XFlush(pShadow->dpy);
       } /* END if */
@@ -2324,7 +2348,10 @@ int x,y;
   PSHADOW   pShadow;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    if (doDpmsMouse)
+    {
+      DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    }
     XFlush(pShadow->dpy);
   }
 

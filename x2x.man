@@ -223,6 +223,14 @@ sticky option prevents autoup for the specified key.  Look in
 /usr/include/X11/keysymdef.h for a list of valid names of keys
 (remove the leading XK_).
 .TP
+.B \-singlesticky
+.IP
+Some X servers generate both a key down and a key up when a lock key
+is toggled.  Some X servers generate a key down when a lock key is
+activated and a key up only when it is deactivated.  This option will
+allow an X server with the former behavior to control one with the
+latter behavior.  Use this if Caps_Lock lock is behaving like shift.
+.TP
 .B \-label \fIlabel\fP
 .IP
 Override the label of the control window (useful when running over ssh).
