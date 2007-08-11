@@ -1,5 +1,5 @@
 Source: x2x
-Maintainer: Romain Francoise <rfrancoise@debian.org>
+Maintainer: Debian QA Group <packages@qa.debian.org>
 Build-Depends: debhelper (>= 5.0.0), libx11-dev, libxtst-dev, x-dev, xutils
 Section: x11
 Priority: optional

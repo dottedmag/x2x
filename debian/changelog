@@ -1,3 +1,9 @@
+x2x (1.27.svn.20060501-2) unstable; urgency=low
+
+  * debian/control: Set maintainer to Debian QA Group.
+
+ -- Romain Francoise <rfrancoise@debian.org>  Sat, 11 Aug 2007 12:54:09 +0200
+
 x2x (1.27.svn.20060501-1) unstable; urgency=low
 
   * New upstream release:
