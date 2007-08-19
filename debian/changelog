@@ -1,3 +1,12 @@
+x2x (1.27.svn.20060501-3) unstable; urgency=low
+
+  * QA upload.
+  * Add md5sums to debian/rules.
+  * Bump Standards-Version to 3.7.2.
+  * Use [ ! -f Makefile ] || $(MAKE) clean.
+
+ -- Mohammed Adnène Trojette <adn+deb@diwi.org>  Sun, 19 Aug 2007 17:55:08 +0200
+
 x2x (1.27.svn.20060501-2) unstable; urgency=low
 
   * debian/control: Set maintainer to Debian QA Group.

@@ -11,7 +11,7 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp
-	-$(MAKE) clean
+	[ ! -f Makefile ] || $(MAKE) clean
 	dh_clean
 	-rm -f Makefile Makefile.bak
 
@@ -39,6 +39,7 @@ binary-arch: build install
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol
+	dh_md5sums
 	dh_builddeb
 
 binary:	binary-indep binary-arch

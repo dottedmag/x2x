@@ -3,7 +3,7 @@ Maintainer: Debian QA Group <packages@qa.debian.org>
 Build-Depends: debhelper (>= 5.0.0), libx11-dev, libxtst-dev, x-dev, xutils
 Section: x11
 Priority: optional
-Standards-Version: 3.7.0
+Standards-Version: 3.7.2
 
 Package: x2x
 Architecture: any
