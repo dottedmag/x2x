@@ -9,7 +9,13 @@ AM_LDFLAGS = $(X11_LIBS)
 
 bin_PROGRAMS = x2x
 
-x2x_SOURCES = lawyerese.c x2x.c
+x2x_SOURCES = x2x.c
+nodist_x2x_SOURCES = lawyerese.c
+
+man1_MANS = x2x.1
+dist_man_MANS = x2x.1
+
+# -- win32 support --
 
 if WIN32
 
@@ -17,13 +23,12 @@ AM_CFLAGS += -DWIN_2_X
 AM_LDFLAGS += -luser32 -lgdi32 # Ugly hack
 x2x_SOURCES += keymap.c winmsg.c x2xwin.rc
 
-%.o: %.rc
+.o:.rc
 	windres $^ -o $@
 
 x2xwin.o: resource.h nocursor.cur
 
 endif
-
 
 # -- creating lawyerese.c --
 
@@ -42,4 +47,8 @@ lawyerese.c: $(COPYING_FILES)
 
 CLEANFILES = lawyerese.c
 
-# -- --
+# -- Various --
+
+EXTRA_DIST = ChangeLog.old COPYING.win32 keymap.h nocursor.cur resource.h x2x.1
+
+
