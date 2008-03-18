@@ -4,10 +4,16 @@
 
 bin_PROGRAMS = x2x
 
-x2x_CFLAGS = $(X2X_CFLAGS) -Wall
-x2x_LDADD = $(X2X_LDADD)
+AM_CFLAGS = $(X11_CFLAGS) -Wall
+AM_LIBS = $(X11_LIBS)
 
-x2x_SOURCES = lawyrese.c x2x.c
+x2x_SOURCES = lawyerese.c x2x.c
+
+lawyerese.c: COPYING.win32 COPYING
+	echo 'char *lawyerese =' > $@.tmp && \
+		sed -e 's|.*|"\0\\n"|g' $^ >> $@.tmp && \
+		echo ";" >> $@.tmp && \
+		mv $@.tmp $@ || rm -f $@.tmp
 
 # if cygwin
 #   x2x_SOURCES += keymap.c winmsg.c
