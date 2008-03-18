@@ -18,3 +18,5 @@ config.log
 Makefile
 .deps
 lawyerese.c
+x2x
+*.o
