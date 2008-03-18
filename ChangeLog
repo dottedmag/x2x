@@ -1,0 +1,4 @@
+2008-03-18
+
+- autotools-based build instead of Imake-based
+- lawyerese.c is now generated from COPYING.*

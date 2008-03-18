@@ -1,0 +1,12 @@
+== x2x ==
+
+x2x allows the keyboard, mouse on one X display to be used to control another X
+display. It also shares X clipboards between the displays.
+
+When built/run on Cygwin may be run on Windows desktop to control X display.
+
+== License ==
+
+x2x is under MIT/BSD license.
+
+Windows support includes code under GPL2 or later.
