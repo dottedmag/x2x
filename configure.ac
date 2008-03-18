@@ -5,7 +5,7 @@ dnl BSD-3
 dnl
 
 AC_PREREQ([2.57])
-AC_INIT(x2x,[1.30],[http://x2x.dottedmag.net/newticket],x2x)
+AC_INIT(x2x,[1.30-rc1],[http://x2x.dottedmag.net/newticket],x2x)
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 
