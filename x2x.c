@@ -219,6 +219,7 @@ typedef struct {
   /* stuff on "from" display */
   Display *fromDpy;
   Atom    fromDpyUtf8String;
+  Atom    fromDpyTargets;
   Window  root;
   Window  trigger;
   Window  big;
@@ -258,6 +259,7 @@ typedef struct {
   /* stuff on "to" display */
   Display *toDpy;
   Atom    toDpyUtf8String;
+  Atom    toDpyTargets;
   Window  selWin;
   unsigned int inverseMap[N_BUTTONS + 1]; /* inverse of button mapping */
 
@@ -991,10 +993,12 @@ PDPYINFO pDpyInfo;
   if (fromDpy != fromWin) {
 #endif
     pDpyInfo->fromDpyUtf8String = XInternAtom(fromDpy, UTF8_STRING, False);
+    pDpyInfo->fromDpyTargets = XInternAtom(fromDpy, "TARGETS", False);
 #ifdef WIN_2_X
   }
 #endif
   pDpyInfo->toDpyUtf8String = XInternAtom(toDpy, UTF8_STRING, False);
+  pDpyInfo->toDpyTargets = XInternAtom(toDpy, "TARGETS", False);
 
   /* other dpyinfo values */
   pDpyInfo->mode        = X2X_DISCONNECTED;
@@ -1934,22 +1938,33 @@ XSelectionRequestEvent *pEv;
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
   Display *otherDpy;
   Atom utf8string;
+  Atom targets;
+  Atom data[10];
+  int n = 0;
 
   if (dpy == pDpyInfo->fromDpy) {
     utf8string = pDpyInfo->fromDpyUtf8String;
+    targets = pDpyInfo->fromDpyTargets;
   } else {
     utf8string = pDpyInfo->toDpyUtf8String;
+    targets = pDpyInfo->toDpyTargets;
   }
 
-    debug("selection request\n");
+  debug("selection request\n");
 
-  /* bribe me to support more general selection requests,
-     or send me the code to do it. */
   if ((pDpyXtra->sState != SELSTATE_ON) ||
       (pEv->selection != XA_PRIMARY) ||
-      (pEv->target > XA_LAST_PREDEFINED && pEv->target != utf8string)) { /* bad request, punt request */
+      (pEv->target > XA_LAST_PREDEFINED && pEv->target != utf8string && pEv->target != targets)) { /* bad request, punt request */
     pEv->property = None;
     SendSelectionNotify(pEv); /* blam! */
+  } else if (pEv->target == targets) {
+    // send targets supported -> UTF8_STRING, STRING, TARGETS
+    n = 0;
+    data[n++] = utf8string;
+    data[n++] = XA_STRING;
+    data[n++] = targets;
+    XChangeProperty(dpy, pEv->requestor, pEv->property, XA_ATOM, 32, PropModeReplace, (unsigned char *) data, n);
+    SendSelectionNotify(pEv);
   } else {
     otherDpy = pDpyXtra->otherDpy;
     SendPing(otherDpy, GETDPYXTRA(otherDpy, pDpyInfo)); /* get started */
@@ -1958,7 +1973,7 @@ XSelectionRequestEvent *pEv;
       pDpyInfo->sEv.property = None;
       SendSelectionNotify(&(pDpyInfo->sEv)); /* blam! */
     } /* END if InProg */
-    pDpyInfo->sDpy  = otherDpy;
+    pDpyInfo->sDpy = otherDpy;
     pDpyInfo->sEv = *pEv;
   } /* END if relaySel */
   return False;
