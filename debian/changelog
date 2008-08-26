@@ -1,3 +1,12 @@
+x2x (1.27.svn.20060501-4) unstable; urgency=low
+
+  * QA upload.
+  * Build-dependencies: changed xutils to xutils-dev (closes: #485530),
+    dropped x-dev.
+  * debian/control: Added Homepage (closes: #438944)
+
+ -- Ralf Treinen <treinen@debian.org>  Tue, 26 Aug 2008 20:07:36 +0200
+
 x2x (1.27.svn.20060501-3) unstable; urgency=low
 
   * QA upload.

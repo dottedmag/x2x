@@ -1,9 +1,10 @@
 Source: x2x
 Maintainer: Debian QA Group <packages@qa.debian.org>
-Build-Depends: debhelper (>= 5.0.0), libx11-dev, libxtst-dev, x-dev, xutils
+Build-Depends: debhelper (>= 5.0.0), libx11-dev, libxtst-dev, xutils-dev
 Section: x11
 Priority: optional
 Standards-Version: 3.7.2
+Homepage:  http://freshmeat.net/projects/x2x/
 
 Package: x2x
 Architecture: any
