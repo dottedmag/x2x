@@ -1,0 +1,40 @@
+[wiki:MIT-MAGIC-COOKIE-1] is much more secure authentication protocol than HostBasedAuthentication: it uses private tokens to authenicate clients trying to access X server: token is bound to the X server and vaild only during one session.
+
+Authentication tokens are generated at server startup and stored at
+`.Xauthority` file in user home directory. Any X application trying to
+access the display reads authentication token corresponding to
+the display from this file (or from the file variable XAUTHORITY
+points to if this variable exists) and passes this token to the
+server.
+
+`xauth` program is designed to manipulate authentication tokens. Two
+most interesting for us commands of xauth are
+
+||`xauth nextract`||extracts the authentication token from `.Xauthority` file.||
+||`xauth nmerge`||adds the authentication token, extracted by `nextract`, to the `.Xauthority` file||
+
+('n' here means 'numeric format' as opposed to the 'binary': numeric format contains only printable symbols).
+
+You also can list installed to the `.Xauthority` authentication tokens by using `xauth nlist`.
+
+Example configuration is the same as in HostBasedAuthentication: `host1` runs `x2x` and wants to control display on `host2`.
+
+On the host2:
+{{{
+host2% echo $DISPLAY
+:0.0
+host2% xauth nextract - :0.0
+<here goes the authentication token>
+host2%
+}}}
+
+On the host1:
+{{{
+host1% xauth nmerge -
+<here the paste of the authentication token above>
+host1% x2x -to host2:0
+}}}
+
+This authentication method is a bit more complicated than host-based,
+but much more secure, and you should prefer it unless you know exactly
+what are you doing.

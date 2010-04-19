@@ -1,0 +1,37 @@
+X server may be configured to allow """any""" connection from
+specified host. `xhost` is the utility allowing to control what hosts
+are allowed to connect.
+
+Basic synopsis is
+
+||`xhost -`||enables host authentication protocol: only authenticated hosts may connect.||
+||`xhost +`||disables any security protocols: any host may connect||
+||`xhost +host`||adds specified host to the allowed hosts list||
+||`xhost -host`||removes host from the allowed hosts list||
+
+`host` may contain `inet:hostname` to allow clients from `hostname` to connect, `local` to allow connection from local clients and other, less used now, forms.
+
+For the full information about xhost read `xhost(1x)` manual page and `Xsecurity(7x)` manual pages.
+
+It is highly insecure to use host-based authentication protocols
+in the non-controlled networks, so you
+should probably consider using other authentication protocol, such as
+[wiki:MIT-MAGIC-COOKIE-1], or even SshTunneling. But in
+some cases, such as virtual machines inside one hardware machine,
+host-based authentication is ok.
+
+Example configuration using host-based authentication is the following:
+`host1` runs `x2x` and wants to control display on `host2`.
+
+On the host2:
+{{{
+host2% echo $DISPLAY
+:0.0
+host2% xhost +inet:host1 (or just 'xhost +host1')
+host2%
+}}}
+
+On the host1:
+{{{
+host1% x2x -to host2:0
+}}}

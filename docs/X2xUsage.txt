@@ -1,0 +1,15 @@
+x2x links two X displays together so you can use single mouse and
+keyboard to control them. Your keyboard and mouse works as
+usual on the display they attached to, until you switch display (by clicking x2x window, or moving mouse to the edge of screen, depending of the options passed to x2x), and then all your input goes to the second display. X selection data also
+propagates as expected.
+
+''Right now there are glitches with transferring non-ASCII X selection data:
+GTK and QT applications expose strange behavior, while Tk and Xaw
+applications work properly (see the ticket #7).''
+
+Surely, accessing remote displays is a subject of
+authentication.  x2x uses regular X11 authorization methods, so this
+should not be so much trouble, but we are providing quick howto for
+the uninitiated :)
+
+X11 use HostBasedAuthentication and [wiki:MIT-MAGIC-COOKIE-1] protocols. Also SshTunneling may be used for the access to the remote displays.
