@@ -1996,6 +1996,7 @@ Display *dpy;
 PDPYINFO pDpyInfo;
 XPropertyEvent *pEv;
 {
+  Atom target;
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
 
   debug("property notify\n");
@@ -2010,8 +2011,15 @@ XPropertyEvent *pEv;
         /* oops, need to ensure uniqueness */
         SendPing(dpy, pDpyXtra); /* try for another time stamp */
       } else {
+        target = pDpyInfo->sEv.target;
+        if (dpy == pDpyInfo->fromDpy && target == pDpyInfo->toDpyUtf8String) {
+          target = pDpyInfo->fromDpyUtf8String;
+        } else if (dpy == pDpyInfo->toDpy && target == pDpyInfo->fromDpyUtf8String) {
+          target = pDpyInfo->toDpyUtf8String;
+        }
+
         pDpyInfo->sTime = pEv->time;
-        XConvertSelection(dpy, pDpyInfo->sEv.selection, pDpyInfo->sEv.target,
+        XConvertSelection(dpy, pDpyInfo->sEv.selection, target,
                           XA_PRIMARY, pDpyXtra->propWin, pEv->time);
       } /* END if ... ensure uniqueness */
     } /* END if sState... */
@@ -2074,6 +2082,13 @@ XSelectionEvent *pEv;
 
     pSelReq = &(pDpyInfo->sEv);
     if (success) { /* send bits to the requesting dpy/window */
+      if (type == utf8string) {
+        if (dpy == pDpyInfo->fromDpy) {
+          type = pDpyInfo->toDpyUtf8String;
+        } else {
+          type = pDpyInfo->fromDpyUtf8String;
+        }
+      }
       XChangeProperty(pSelReq->display, pSelReq->requestor,
                       pSelReq->property, type, format, PropModeReplace,
                       prop, nitems);
