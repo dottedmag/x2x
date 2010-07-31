@@ -920,8 +920,9 @@ PDPYINFO pDpyInfo;
   toDpy   = pDpyInfo->toDpy;
   pDpyInfo->toDpyXtra.propWin = (Window) 0;
 
+  gravity = NorthWestGravity;   /* Default gravity of window. */
+
 #ifdef WIN_2_X
-  gravity = NorthWestGravity;   /* keep compliler happy */
   pDpyInfo->unreasonableCount = 0;
 
   if (fromDpy == fromWin) {
