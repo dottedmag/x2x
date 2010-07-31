@@ -709,7 +709,7 @@ char **argv;
       if (++arg >= argc) Usage();
       triggerw = atoi(argv[arg]);
     } else if (!strcasecmp(argv[arg], "-copyright")) {
-      printf(lawyerese);
+      puts(lawyerese);
     } else {
       Usage();
     } /* END if... */
