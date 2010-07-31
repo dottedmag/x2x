@@ -1385,12 +1385,7 @@ PDPYINFO pDpyInfo;
   pDpyInfo->eventMask = eventMask; /* save for future munging */
   if (doSel) XSetSelectionOwner(fromDpy, XA_PRIMARY, trigger, CurrentTime);
   XMapRaised(fromDpy, trigger);
-  if (pDpyInfo->fid) { /* paint text */
-    XDrawImageString(fromDpy, trigger, textGC,
-                     MAX(0, ((width - twidth) / 2)),
-                     MAX(0, ((height - theight) / 2)) + tascent,
-                     label, strlen(label));
-  } /* END if font */
+  DrawWindowText(pDpyInfo);
 #ifdef WIN_2_X
   }
 #endif
