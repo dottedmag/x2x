@@ -903,7 +903,8 @@ PDPYINFO pDpyInfo;
   int       geomMask;                /* mask returned by parse */
   int       gravMask;
   int       gravity;
-  int       xret, yret, wret, hret, bret, dret;
+  int       xret, yret;
+  unsigned int wret, hret, bret, dret;
   XSetWindowAttributes xswa;
   XSizeHints *xsh;
   int       eventMask;
