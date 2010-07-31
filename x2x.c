@@ -921,6 +921,7 @@ PDPYINFO pDpyInfo;
   pDpyInfo->toDpyXtra.propWin = (Window) 0;
 
   gravity = NorthWestGravity;   /* Default gravity of window. */
+  pDpyInfo->fid = 0; /* Default is no text. */
 
 #ifdef WIN_2_X
   pDpyInfo->unreasonableCount = 0;
@@ -1155,7 +1156,6 @@ PDPYINFO pDpyInfo;
 #ifdef WIN_2_X
     }
 #endif
-    fid = 0;
   } else { /* normal window for text: do size grovelling */
     pDpyInfo->grabCursor = XCreateFontCursor(fromDpy, XC_exchange);
     eventMask |= StructureNotifyMask | ExposureMask;
@@ -1181,6 +1181,11 @@ PDPYINFO pDpyInfo;
       XSetState(fromDpy, textGC, black, white, GXcopy, AllPlanes);
       XSetFont(fromDpy, textGC, fid);
 
+      pDpyInfo->fid = fid;
+      pDpyInfo->twidth = twidth;
+      pDpyInfo->theight = theight;
+      pDpyInfo->tascent = tascent;
+
     } else { /* should not have to execute this clause: */
       twidth = theight = 100; /* default window size */
     } /* END if have a font ... else ... */
@@ -1196,6 +1201,8 @@ PDPYINFO pDpyInfo;
     case YNegative:               gravity = SouthWestGravity; break;
     default:                      gravity = NorthWestGravity; break;
     }
+    pDpyInfo->width = width;
+    pDpyInfo->height = height;
     if (gravMask) {
       XGetGeometry(fromDpy, root,
                    &rret, &xret, &yret, &wret, &hret, &bret, &dret);
@@ -1377,14 +1384,7 @@ PDPYINFO pDpyInfo;
   pDpyInfo->eventMask = eventMask; /* save for future munging */
   if (doSel) XSetSelectionOwner(fromDpy, XA_PRIMARY, trigger, CurrentTime);
   XMapRaised(fromDpy, trigger);
-  if ((pDpyInfo->fid = fid)) { /* paint text */
-    /* position text */
-    pDpyInfo->twidth = twidth;
-    pDpyInfo->theight = theight;
-    pDpyInfo->tascent = tascent;
-    pDpyInfo->width = width;
-    pDpyInfo->height = height;
-
+  if (pDpyInfo->fid) { /* paint text */
     XDrawImageString(fromDpy, trigger, textGC,
                      MAX(0, ((width - twidth) / 2)),
                      MAX(0, ((height - theight) / 2)) + tascent,
