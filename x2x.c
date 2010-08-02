@@ -147,6 +147,7 @@ static void    RegisterEventHandlers();
 static Bool    ProcessEvent();
 static Bool    ProcessMotionNotify();
 static Bool    ProcessExpose();
+static void    DrawWindowText();
 static Bool    ProcessEnterNotify();
 static Bool    ProcessButtonPress();
 static Bool    ProcessButtonRelease();
@@ -1652,16 +1653,22 @@ PDPYINFO pDpyInfo;
 XExposeEvent *pEv;
 {
   XClearWindow(pDpyInfo->fromDpy, pDpyInfo->trigger);
-  if (pDpyInfo->fid)
-    XDrawImageString(pDpyInfo->fromDpy, pDpyInfo->trigger, pDpyInfo->textGC,
-                     MAX(0,((pDpyInfo->width - pDpyInfo->twidth) / 2)),
-                     MAX(0,((pDpyInfo->height - pDpyInfo->theight) / 2)) +
-                     pDpyInfo->tascent, label, strlen(label));
-
+  DrawWindowText(pDpyInfo);
   return False;
 
 } /* END ProcessExpose */
 
+static void DrawWindowText(pDpyInfo)
+PDPYINFO pDpyInfo;
+{
+  if (pDpyInfo->fid == 0)
+    return;
+
+  XDrawImageString(pDpyInfo->fromDpy, pDpyInfo->trigger, pDpyInfo->textGC,
+		   MAX(0,((pDpyInfo->width - pDpyInfo->twidth) / 2)),
+		   MAX(0,((pDpyInfo->height - pDpyInfo->theight) / 2)) +
+		   pDpyInfo->tascent, label, strlen(label));
+}
 static Bool ProcessEnterNotify(dpy, pDpyInfo, pEv)
 Display  *dpy;
 PDPYINFO pDpyInfo;
