@@ -1809,7 +1809,7 @@ XKeyEvent *pEv;
   Bool      DoFakeShift = False;
   KeyCode   toShiftCode;
 
-  XLookupString(pEv, NULL, 0, &keysym, NULL);
+  keysym = XKeycodeToKeysym(pDpyInfo->fromDpy, pEv->keycode, 0);
   bPress = (pEv->type == KeyPress);
 
 #ifdef DEBUG
