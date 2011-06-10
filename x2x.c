@@ -1710,7 +1710,7 @@ XButtonEvent *pEv;
     }
 
     /* check if more than one button pressed */
-    state = pEv->state;
+    state = pEv->state & (Button1Mask|Button2Mask|Button3Mask|Button4Mask|Button5Mask);
     switch (pEv->button) {
     case Button1: state &= ~Button1Mask; break;
     case Button2: state &= ~Button2Mask; break;
@@ -1767,7 +1767,7 @@ XButtonEvent *pEv;
   if ((pDpyInfo->mode == X2X_AWAIT_RELEASE) || 
       (pDpyInfo->mode == X2X_CONN_RELEASE)) {
     /* make sure that all buttons are released */
-    state = pEv->state;
+    state = pEv->state & (Button1Mask|Button2Mask|Button3Mask|Button4Mask|Button5Mask);
     switch (pEv->button) {
     case Button1: state &= ~Button1Mask; break;
     case Button2: state &= ~Button2Mask; break;
