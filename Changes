@@ -1,0 +1,113 @@
+RCS 1.1 -nAlpha1 : First release for Puneet and David to play with
+Files:
+Imakefile
+format.c
+format.h
+keymap.c
+keymap.h
+lawyerese.c
+x2x.1
+x2x.c
+
+
+22 Sept 03 released Alpha2
+--------------------------
+- Modify Imakefile to recognize cygwin or not
+- Adapt to load null cursor
+- Add Windows resources (for cursor, but alos has version info)
+- Initializae some variables (unused in -fromwin) to keep compiler happy
+- Add casts in printfs to remover warnings
+- Don't grab clipboard from X if its what we added to Windows
+- Force redraw when big window goes away (may not be strictly needed)
+- Intersept windows screenblank and forward to X if connected
+- Intersept ERASEBKGND and prevent Windows drawing black in big window
+- Don't register for property notify (on -to) in fromWin case
+- Bump version to 1.30 per Chaiken
+Add files:
+resource.h
+nocursor.cur (copy from win2vnc)
+x2xwin.rc (resource description)
+
+02 Oct 03 released Alpha3
+
+- After MAX_UNREASONABLES "unreasonable" coordinates they become reasonable
+  (helps recovery from errors that would otherwise loose the mouse)
+
+- Add 1 second tick to cause X events to be polled, sets max bound
+  when doing a paste to the X side [bug from pkumar]
+
+- Check number of buttons on -to side and don't send mousewheel events
+  if buttons 4/5 are not ok. [bug from chaiken]
+
+- Check for not becomming foreground, and try to recover, become aggresive
+  if events are turning up on the wrong window  [Bug from Thomas] 
+
+- Fix cursor warp (west) so it goes one left of return coordinate
+  [Bug from Thomas]
+
+- Extra message printing if -DDEBUGCHATTY [mdh]
+
+- Version of -capslockhack code in Windows KeyEvent processing
+  [Bug from Thomas and mdh]
+
+- Add magic key sequences for -fromwin:
+       RightAlt-Home to force cursor back to Windows
+       RightAlt-End to exit x2x
+
+- Known issue: Both left and right shift keys on Windows cause left shift on X.
+
+- make -fromwin imply -capslockhack, and add -nocapslockhack option
+
+- Fix to allow -east work before -fromwin on command line [Bug from Thomas]
+
+- Add comment in usage with Thomas' tip on making a shortcut to launch x2x
+
+- Fix Imakefile LOCAL_LIBRARIES to only include windows libs on cygwin
+- Add comments on -D to Imakefile
+
+Changed files:
+Imakefile
+keymap.c
+x2x.c
+x2xwin.rc (bump version)
+
+Added files:
+winmsg.c - This is a quick hack to turn Windows message numbers into
+           a string so I can print them. Only when -DDEBUGCHATTY
+
+
+27 Oct 2003 Beta 1
+------------------
+
+- Added code from Thomas Chadwick to save Windows focus when going to X
+  and restore on the way back (good for click-to-focus)
+
+- Added code from Thomas Chadwick to send a fake mouse click to Windows
+  when x2x is havig problems getting the focus (good for click-to-focus)
+
+- Support the -buttonblock flag in the -fromwin code
+
+- Add description of -fromwin to the manpage
+
+- Make man file x2x.man so that the makefile will build x2x.1.html
+  and the install will install x2x.1
+
+- Add to BUGS section of the man page that Ctrl-Alt-Del on the Windows
+side will leave the Ctrl and Alt keys stuck down on the X server and that
+pressing and releasing Ctrl and Alt should fix this.
+
+- Default to no -DDEBUG
+
+- Bump version to Beta
+
+- Add -clipcheck option and relax clipboard copy checking to windows
+if it is not given (allows other than plain XA_STRING copies, eg emacs
+keeps giving me a COMPOUND_TEXT type)
+
+Changed files:
+x2x.c
+x2x.man
+x2xwin.rc
+Imakefile
+
+
