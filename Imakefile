@@ -6,7 +6,7 @@ LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XLIB) -luser32 -lgdi32
            SRCS = lawyerese.c x2x.c format.c keymap.c winmsg.c
            OBJS = lawyerese.o x2x.o format.o keymap.o winmsg.o x2xwin.res
 #else
-LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XLIB)
+LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XSSLIB) $(XLIB)
            SRCS = lawyerese.c x2x.c format.c
            OBJS = lawyerese.o x2x.o format.o
 #endif
