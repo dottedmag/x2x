@@ -1,0 +1,41 @@
+You can use SSH to easily make `x2x` link two displays together. SSH
+provides the options to tunnel the X traffic from the host you are
+connecting to the host you are connected from.
+
+SSH propagates authentication token from the local host to the remote
+host, and creates tunnel. For example, if you have access token to the
+`$DISPLAY` on the local host, it will propagate
+authentication token to the remote host, and forward local X connection to the display like `localhost:10` on the remote host.
+
+SSH server and client have number of options to control the behavior
+of the forwarding. The most frequently used options are listed in the
+table below:
+
+ssh server options (`/etc/ssh/sshd_config`)
+||`X11Forwarding`||Specifies whether forwarding is allowed. May be 'yes' or 'no'.||
+||`X11DisplayOffset`||Specifies first display number to be used. By default it is 	 '10', which means tunnel will be established from the `localhost:10` display. ||
+||`X11UseLocalhost`||Specifies whether listening socket will be bound to the localhost only or to the all available network interfaces.||
+
+ssh client options (`~/.ssh/config`, `/etc/ssh/ssh_config`)
+||`ForwardX11` (command-line switches -X and -x)||Specifies whether to forward X connection to the remote host. Option -X enables forwarding, -x disables it.||
+
+Full list of options is contained in man pages ssh(1), ssh_config(5)
+and sshd_config(5).
+
+Example configuration. host1 runs x2x and wants to control display on host2.
+
+On the host1:
+{{{
+host1% echo $DISPLAY
+:0.0
+host1%
+}}}
+
+On the host2:
+{{{
+host2% ssh host1
+Password:
+host1% echo $DISPLAY
+localhost:10
+host1% x2x -from :0
+}}}

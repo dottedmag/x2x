@@ -1,0 +1,10 @@
+* David Chaiken <chaiken@acm.org>
+  Original version author
+* Charles Briscoe-Smith
+  -north, -south options. Various patches.
+* Mark Hayter
+  Cygwin version, -fromwin to allow using Windows as source display.
+* Snow <snowl@snow.vg>
+  Windows version patches
+* Mikhail Gusarov <dottedmag@dottedmag.net>
+  Maintainer
