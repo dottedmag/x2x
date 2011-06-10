@@ -147,6 +147,7 @@ static void    RegisterEventHandlers();
 static Bool    ProcessEvent();
 static Bool    ProcessMotionNotify();
 static Bool    ProcessExpose();
+static void    DrawWindowText();
 static Bool    ProcessEnterNotify();
 static Bool    ProcessButtonPress();
 static Bool    ProcessButtonRelease();
@@ -709,7 +710,7 @@ char **argv;
       if (++arg >= argc) Usage();
       triggerw = atoi(argv[arg]);
     } else if (!strcasecmp(argv[arg], "-copyright")) {
-      printf(lawyerese);
+      puts(lawyerese);
     } else {
       Usage();
     } /* END if... */
@@ -903,7 +904,8 @@ PDPYINFO pDpyInfo;
   int       geomMask;                /* mask returned by parse */
   int       gravMask;
   int       gravity;
-  int       xret, yret, wret, hret, bret, dret;
+  int       xret, yret;
+  unsigned int wret, hret, bret, dret;
   XSetWindowAttributes xswa;
   XSizeHints *xsh;
   int       eventMask;
@@ -919,8 +921,10 @@ PDPYINFO pDpyInfo;
   toDpy   = pDpyInfo->toDpy;
   pDpyInfo->toDpyXtra.propWin = (Window) 0;
 
+  gravity = NorthWestGravity;   /* Default gravity of window. */
+  pDpyInfo->fid = 0; /* Default is no text. */
+
 #ifdef WIN_2_X
-  gravity = NorthWestGravity;   /* keep compliler happy */
   pDpyInfo->unreasonableCount = 0;
 
   if (fromDpy == fromWin) {
@@ -1153,7 +1157,6 @@ PDPYINFO pDpyInfo;
 #ifdef WIN_2_X
     }
 #endif
-    fid = 0;
   } else { /* normal window for text: do size grovelling */
     pDpyInfo->grabCursor = XCreateFontCursor(fromDpy, XC_exchange);
     eventMask |= StructureNotifyMask | ExposureMask;
@@ -1179,6 +1182,11 @@ PDPYINFO pDpyInfo;
       XSetState(fromDpy, textGC, black, white, GXcopy, AllPlanes);
       XSetFont(fromDpy, textGC, fid);
 
+      pDpyInfo->fid = fid;
+      pDpyInfo->twidth = twidth;
+      pDpyInfo->theight = theight;
+      pDpyInfo->tascent = tascent;
+
     } else { /* should not have to execute this clause: */
       twidth = theight = 100; /* default window size */
     } /* END if have a font ... else ... */
@@ -1194,6 +1202,8 @@ PDPYINFO pDpyInfo;
     case YNegative:               gravity = SouthWestGravity; break;
     default:                      gravity = NorthWestGravity; break;
     }
+    pDpyInfo->width = width;
+    pDpyInfo->height = height;
     if (gravMask) {
       XGetGeometry(fromDpy, root,
                    &rret, &xret, &yret, &wret, &hret, &bret, &dret);
@@ -1375,19 +1385,7 @@ PDPYINFO pDpyInfo;
   pDpyInfo->eventMask = eventMask; /* save for future munging */
   if (doSel) XSetSelectionOwner(fromDpy, XA_PRIMARY, trigger, CurrentTime);
   XMapRaised(fromDpy, trigger);
-  if ((pDpyInfo->fid = fid)) { /* paint text */
-    /* position text */
-    pDpyInfo->twidth = twidth;
-    pDpyInfo->theight = theight;
-    pDpyInfo->tascent = tascent;
-    pDpyInfo->width = width;
-    pDpyInfo->height = height;
-
-    XDrawImageString(fromDpy, trigger, textGC,
-                     MAX(0, ((width - twidth) / 2)),
-                     MAX(0, ((height - theight) / 2)) + tascent,
-                     label, strlen(label));
-  } /* END if font */
+  DrawWindowText(pDpyInfo);
 #ifdef WIN_2_X
   }
 #endif
@@ -1650,16 +1648,22 @@ PDPYINFO pDpyInfo;
 XExposeEvent *pEv;
 {
   XClearWindow(pDpyInfo->fromDpy, pDpyInfo->trigger);
-  if (pDpyInfo->fid)
-    XDrawImageString(pDpyInfo->fromDpy, pDpyInfo->trigger, pDpyInfo->textGC,
-                     MAX(0,((pDpyInfo->width - pDpyInfo->twidth) / 2)),
-                     MAX(0,((pDpyInfo->height - pDpyInfo->theight) / 2)) +
-                     pDpyInfo->tascent, label, strlen(label));
-
+  DrawWindowText(pDpyInfo);
   return False;
 
 } /* END ProcessExpose */
 
+static void DrawWindowText(pDpyInfo)
+PDPYINFO pDpyInfo;
+{
+  if (pDpyInfo->fid == 0)
+    return;
+
+  XDrawImageString(pDpyInfo->fromDpy, pDpyInfo->trigger, pDpyInfo->textGC,
+		   MAX(0,((pDpyInfo->width - pDpyInfo->twidth) / 2)),
+		   MAX(0,((pDpyInfo->height - pDpyInfo->theight) / 2)) +
+		   pDpyInfo->tascent, label, strlen(label));
+}
 static Bool ProcessEnterNotify(dpy, pDpyInfo, pEv)
 Display  *dpy;
 PDPYINFO pDpyInfo;
@@ -1996,6 +2000,7 @@ Display *dpy;
 PDPYINFO pDpyInfo;
 XPropertyEvent *pEv;
 {
+  Atom target;
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
 
   debug("property notify\n");
@@ -2010,8 +2015,15 @@ XPropertyEvent *pEv;
         /* oops, need to ensure uniqueness */
         SendPing(dpy, pDpyXtra); /* try for another time stamp */
       } else {
+        target = pDpyInfo->sEv.target;
+        if (dpy == pDpyInfo->fromDpy && target == pDpyInfo->toDpyUtf8String) {
+          target = pDpyInfo->fromDpyUtf8String;
+        } else if (dpy == pDpyInfo->toDpy && target == pDpyInfo->fromDpyUtf8String) {
+          target = pDpyInfo->toDpyUtf8String;
+        }
+
         pDpyInfo->sTime = pEv->time;
-        XConvertSelection(dpy, pDpyInfo->sEv.selection, pDpyInfo->sEv.target,
+        XConvertSelection(dpy, pDpyInfo->sEv.selection, target,
                           XA_PRIMARY, pDpyXtra->propWin, pEv->time);
       } /* END if ... ensure uniqueness */
     } /* END if sState... */
@@ -2074,6 +2086,13 @@ XSelectionEvent *pEv;
 
     pSelReq = &(pDpyInfo->sEv);
     if (success) { /* send bits to the requesting dpy/window */
+      if (type == utf8string) {
+        if (dpy == pDpyInfo->fromDpy) {
+          type = pDpyInfo->toDpyUtf8String;
+        } else {
+          type = pDpyInfo->fromDpyUtf8String;
+        }
+      }
       XChangeProperty(pSelReq->display, pSelReq->requestor,
                       pSelReq->property, type, format, PropModeReplace,
                       prop, nitems);
