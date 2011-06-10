@@ -82,6 +82,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <errno.h>
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
 #include <X11/Xutil.h>
@@ -89,6 +91,7 @@
 #include <X11/Xatom.h> /* for selection */
 #include <X11/Xos.h>
 #include <X11/extensions/XTest.h>
+#include <X11/extensions/dpms.h>
 #include <X11/keysym.h>
 
 #ifdef WIN_2_X
@@ -166,7 +169,7 @@ static void    FakeThingsUp();
 static void    FakeAction();
 static void    RefreshPointerMapping();
 static void    Usage();
-
+static void    *xmalloc();
 
 
 /**********
@@ -186,7 +189,8 @@ typedef struct _dpyxtra {
 typedef struct _fakestr {
   struct _fakestr *pNext;
   int type;
-  unsigned int thing;
+  KeySym thing;
+  KeyCode code;
 } FAKE, *PFAKE;
 
 #define FAKE_KEY    0
@@ -224,6 +228,8 @@ typedef struct {
   Window  root;
   Window  trigger;
   Window  big;
+  Window  selWinFrom;
+  int     selRevFrom;
   GC      textGC;
   Atom    wmpAtom, wmdwAtom;
   Cursor  grabCursor;
@@ -261,12 +267,14 @@ typedef struct {
   Display *toDpy;
   Atom    toDpyUtf8String;
   Atom    toDpyTargets;
-  Window  selWin;
+  Window  selWinTo;
+  int     selRevTo;
   unsigned int inverseMap[N_BUTTONS + 1]; /* inverse of button mapping */
 
   /* state of connection */
-  int     mode;                        /* connection */
-  int     eventMask;                /* trigger */
+  int     signal;		/* gort signal? */
+  int     mode;			/* connection */
+  int     eventMask;		/* trigger */
 
   /* coordinate conversion stuff */
   int     toScreen;
@@ -290,11 +298,15 @@ typedef struct {
 
 } DPYINFO, *PDPYINFO;
 
+static DPYINFO dpyInfo;
+
 /* shadow displays */
 typedef struct _shadow {
   struct _shadow *pNext;
   char    *name;
   Display *dpy;
+  long    led_mask;
+  Bool    flush;
 } SHADOW, *PSHADOW;
 
 /* sticky keys */
@@ -419,6 +431,9 @@ char **argv;
   PSHADOW pShadow;
 
 #endif /* WIN_2_X */
+#ifdef DEBUG
+  setvbuf(stdout, NULL, _IONBF, 0);
+#endif
 
   XrmInitialize();
   ParseCommandLine(argc, argv);
@@ -455,18 +470,23 @@ char **argv;
     } /* END if */
     sleep(10);
   } /* END while fromDpy */
+  (void)XSynchronize(fromDpy, True);
 
   /* toDpy is always the first shadow */
-  pShadow = (PSHADOW)malloc(sizeof(SHADOW));
+  pShadow = (PSHADOW)xmalloc(sizeof(SHADOW));
   pShadow->name = toDpyName;
   /* link into the global list */
   pShadow->pNext = shadows;
   shadows = pShadow;
 
   /* initialize all of the shadows, including the toDpy */
-  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+    pShadow->led_mask = 0;
+    pShadow->flush = False;
     if (!(pShadow->dpy = OpenAndCheckDisplay(pShadow->name)))
       exit(3);
+  }
+  (void)XSynchronize(shadows->dpy, True);
 
 #ifndef WIN_2_X
   /* set error handler,
@@ -653,7 +673,7 @@ char **argv;
     } else if (!strcasecmp(argv[arg], "-sticky")) {
       if (++arg >= argc) Usage();
       if ((keysym = XStringToKeysym(argv[arg])) != NoSymbol) {
-        pNewSticky = (PSTICKY)malloc(sizeof(STICKY));
+        pNewSticky = (PSTICKY)xmalloc(sizeof(STICKY));
         pNewSticky->pNext  = stickies;
         pNewSticky->isPress = True;
         pNewSticky->keysym = keysym;
@@ -699,7 +719,7 @@ char **argv;
       debug("will resurface the trigger window when obscured\n");
     } else if (!strcasecmp(argv[arg], "-shadow")) {
       if (++arg >= argc) Usage();
-      pShadow = (PSHADOW)malloc(sizeof(SHADOW));
+      pShadow = (PSHADOW)xmalloc(sizeof(SHADOW));
       pShadow->name = argv[arg];
 
       /* into the global list of shadows */
@@ -796,11 +816,17 @@ int ErrorHandler(Display *disp, XErrorEvent *event) {
 #define X2X_CONNECTED       2
 #define X2X_CONN_RELEASE    3
 
+static void signal_handler(int sig)
+{
+  if (dpyInfo.mode == X2X_CONNECTED)
+    DoDisconnect(&dpyInfo);
+  dpyInfo.signal = sig;
+}
+
 static void DoX2X(fromDpy, toDpy)
 Display *fromDpy;
 Display *toDpy;
 {
-  DPYINFO   dpyInfo;
   int       nfds;
   fd_set    fdset;
   Bool      fromPending;
@@ -811,6 +837,9 @@ Display *toDpy;
   dpyInfo.toDpy = toDpy;
   InitDpyInfo(&dpyInfo);
   RegisterEventHandlers(&dpyInfo);
+
+  signal(SIGINT,  signal_handler);
+  signal(SIGTERM, signal_handler);
 
   /* set up for select */
 #ifdef WIN_2_X
@@ -865,7 +894,7 @@ Display *toDpy;
   } else
     /* Again, the else qualifies the while below */
 #endif /* WIN_2_X */
-  while (True) { /* FOREVER */
+  while (dpyInfo.signal == 0) { /* FOREVER */
     if ((fromPending = XPending(fromDpy)))
       if (ProcessEvent(fromDpy, &dpyInfo)) /* done! */
         break;
@@ -979,6 +1008,7 @@ PDPYINFO pDpyInfo;
   vertical   = pDpyInfo->vertical = (doEdge == EDGE_NORTH
                                       || doEdge == EDGE_SOUTH);
 #else
+  gravity = NorthWestGravity;   /* keep compliler happy */
   fromScreen = XDefaultScreenOfDisplay(fromDpy);
   black      = XBlackPixelOfScreen(fromScreen);
   white      = XWhitePixelOfScreen(fromScreen);
@@ -1063,18 +1093,18 @@ PDPYINFO pDpyInfo;
       WNDCLASS wndclass;
       const DWORD winstyle = 0;
 
-      wndclass.style                = 0;
-      wndclass.lpfnWndProc        = WinProcessMessage;
-      wndclass.cbClsExtra        = 0;
-      wndclass.cbWndExtra        = 0;
-      wndclass.hInstance        = m_instance;
+      wndclass.style		= 0;
+      wndclass.lpfnWndProc	= WinProcessMessage;
+      wndclass.cbClsExtra	= 0;
+      wndclass.cbWndExtra	= 0;
+      wndclass.hInstance	= m_instance;
       /* XXX mdh - For now just use system provided resources */
-      wndclass.hIcon                = LoadIcon(NULL, IDI_APPLICATION);
-      // wndclass.hCursor        = LoadCursor(NULL, IDC_NO);
-      wndclass.hCursor                = LoadCursor(m_instance, MAKEINTRESOURCE(IDC_NOCURSOR));
-      wndclass.hbrBackground        = (HBRUSH) GetStockObject(BLACK_BRUSH);
-      wndclass.lpszMenuName        = (const TCHAR *) NULL;
-      wndclass.lpszClassName        = fromWinName;
+      wndclass.hIcon		= LoadIcon(NULL, IDI_APPLICATION);
+      // wndclass.hCursor	= LoadCursor(NULL, IDC_NO);
+      wndclass.hCursor		= LoadCursor(m_instance, MAKEINTRESOURCE(IDC_NOCURSOR));
+      wndclass.hbrBackground	= (HBRUSH) GetStockObject(BLACK_BRUSH);
+      wndclass.lpszMenuName	= (const TCHAR *) NULL;
+      wndclass.lpszClassName	= fromWinName;
 
       RegisterClass(&wndclass);
 
@@ -1235,7 +1265,7 @@ PDPYINFO pDpyInfo;
   if (title) {
     windowName = title;
   } else {
-    windowName = (char *)malloc(strlen(programStr) + strlen(toDpyName) + 2);
+    windowName = (char *)xmalloc(strlen(programStr) + strlen(toDpyName) + 2);
     sprintf(windowName, "%s %s", programStr, toDpyName);
   }
 
@@ -1281,10 +1311,10 @@ PDPYINFO pDpyInfo;
                         ? (nScreens - 1) : 0;
 
   /* construct table lookup for screen coordinate conversion */
-  pDpyInfo->xTables = (short **)malloc(sizeof(short *) * nScreens);
-  pDpyInfo->yTables = (short **)malloc(sizeof(short *) * nScreens);
-  heights = (int *)malloc(sizeof(int *) * nScreens);
-  widths  = (int *)malloc(sizeof(int *) * nScreens);
+  pDpyInfo->xTables = (short **)xmalloc(sizeof(short *) * nScreens);
+  pDpyInfo->yTables = (short **)xmalloc(sizeof(short *) * nScreens);
+  heights = (int *)xmalloc(sizeof(int *) * nScreens);
+  widths  = (int *)xmalloc(sizeof(int *) * nScreens);
 
   for (screenNum = 0; screenNum < nScreens; ++screenNum) {
     widths[screenNum] = toWidth  =
@@ -1293,9 +1323,9 @@ PDPYINFO pDpyInfo;
       XHeightOfScreen(XScreenOfDisplay(toDpy, screenNum));
 
     pDpyInfo->xTables[screenNum] = xTable =
-      (short *)malloc(sizeof(short) * fromWidth);
+      (short *)xmalloc(sizeof(short) * fromWidth);
     pDpyInfo->yTables[screenNum] = yTable =
-      (short *)malloc(sizeof(short) * fromHeight);
+      (short *)xmalloc(sizeof(short) * fromHeight);
 
     /* vertical conversion table */
     for (counter = 0; counter < fromHeight; ++counter)
@@ -1393,15 +1423,142 @@ PDPYINFO pDpyInfo;
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
     XTestGrabControl(pShadow->dpy, True); /* impervious to grabs! */
 
+  pDpyInfo->selWinTo = None;
+  pDpyInfo->selRevTo = 0;
+  pDpyInfo->selWinFrom = None;
+  pDpyInfo->selRevFrom = 0;
+  pDpyInfo->signal = 0;
+
 } /* END InitDpyInfo */
+
+static void DoWakeUp(Display *dpy)
+{
+  CARD16 state;
+  BOOL onoff;
+  int dummy;
+
+  if (!DPMSQueryExtension(dpy, &dummy, &dummy))
+    return;
+
+  if (!DPMSInfo(dpy, &state, &onoff))
+    return;
+
+  if (!onoff)
+    return;
+
+  switch (state) {
+  case DPMSModeOn:
+    return;
+  default:
+    break;
+  }
+
+#ifdef DEBUG
+  printf("DMPS Wakup\n");
+#endif
+  DPMSForceLevel(dpy, DPMSModeOn);
+}
+
+/*
+ * Be sure that on all displays the same keyboard state
+ * is active, therefore check for CapsLock and NumLock,
+ * compare, and if required change the state on the
+ * shadowed displays.
+ */
+static void KeyboardState(Display *dpy)
+{
+  PSHADOW pShadow;
+  XKeyboardState toState;
+
+  XGetKeyboardControl(dpy, &toState);
+#ifdef DEBUG
+  printf("  LED mask = %lx\n", toState.led_mask);
+#endif
+
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+    KeyCode keycode;
+    XKeyboardState shState;
+
+    XGetKeyboardControl(pShadow->dpy, &shState);
+
+    if (toState.led_mask == shState.led_mask)
+      continue;
+
+    pShadow->led_mask = shState.led_mask;
+
+    if ((toState.led_mask & 1) != (shState.led_mask & 1) &&
+	(keycode = XKeysymToKeycode(pShadow->dpy, XK_Caps_Lock))) {
+      XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+      XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+      pShadow->flush = True;
+    }
+
+    if ((toState.led_mask & 2) != (shState.led_mask & 2) &&
+	(keycode = XKeysymToKeycode(pShadow->dpy, XK_Num_Lock))) {
+      XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+      XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+      pShadow->flush = True;
+    }
+
+    if (pShadow->flush) {
+      XFlush(pShadow->dpy);
+      pShadow->flush = False;
+    }
+  }
+}
+
+static void RestoreKeyboardState(void)
+{
+  PSHADOW pShadow;
+
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+    KeyCode keycode;
+    XKeyboardState shState;
+
+    XGetKeyboardControl(pShadow->dpy, &shState);
+
+#ifdef DEBUG
+    printf("  LED mask = %lx(%lx)\n", shState.led_mask, pShadow->led_mask);
+#endif
+
+    if (pShadow->led_mask == shState.led_mask)
+      continue;
+
+    if ((pShadow->led_mask & 1) != (shState.led_mask & 1) &&
+	(keycode = XKeysymToKeycode(pShadow->dpy, XK_Caps_Lock))) {
+      XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+      XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+      pShadow->flush = True;
+    }
+
+    if ((pShadow->led_mask & 2) != (shState.led_mask & 2) &&
+	(keycode = XKeysymToKeycode(pShadow->dpy, XK_Num_Lock))) {
+      XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+      XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+      pShadow->flush = True;
+    }
+
+    if (pShadow->flush) {
+      XFlush(pShadow->dpy);
+      pShadow->flush = False;
+    }
+  }
+}
+
+static int bad_window_handler(Display *disp, XErrorEvent *err)
+{
+  return 0;
+}
 
 static void DoConnect(pDpyInfo)
 PDPYINFO pDpyInfo;
 {
   Display *fromDpy = pDpyInfo->fromDpy;
-  Window  trigger = pDpyInfo->trigger;
+  Window   trigger = pDpyInfo->trigger;
+  PSHADOW pShadow;
 
-  PSHADOW   pShadow;
+  if (pDpyInfo->signal)
+    return;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
     if (doDpmsMouse)
@@ -1417,6 +1574,32 @@ PDPYINFO pDpyInfo;
 #ifdef WIN_2_X
   assert (fromDpy != fromWin);
 #endif
+
+  XGetInputFocus(fromDpy, &pDpyInfo->selWinFrom, &pDpyInfo->selRevFrom);
+  XSetInputFocus(fromDpy, PointerRoot, 0, CurrentTime);
+  XSync(fromDpy, False);
+
+  XFlush(pDpyInfo->toDpy);
+
+  if (pDpyInfo->selWinTo != None) {
+    Display  *toDpy = pDpyInfo->toDpy;
+    Window selWinTo = pDpyInfo->selWinTo;
+    int    selRevTo = pDpyInfo->selRevTo;
+    XErrorHandler old_handler = XSetErrorHandler(bad_window_handler);
+
+    XSetInputFocus(toDpy, selWinTo, selRevTo, CurrentTime);
+    XSync (toDpy, False);
+    (void) XSetErrorHandler(old_handler);
+  }
+
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
+    DoWakeUp(pShadow->dpy);
+
+  if (doAutoUp)
+    KeyboardState(fromDpy);
+
+  XSync(fromDpy, False);
+
   if (pDpyInfo->big != None) XMapRaised(fromDpy, pDpyInfo->big);
   XGrabPointer(fromDpy, trigger, True,
                PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
@@ -1426,13 +1609,16 @@ PDPYINFO pDpyInfo;
                 GrabModeAsync, GrabModeAsync,
                 CurrentTime);
   XSelectInput(fromDpy, trigger, pDpyInfo->eventMask | PointerMotionMask);
-  XFlush(fromDpy);
+
+  XSync(fromDpy, False);
+
 } /* END DoConnect */
 
 static void DoDisconnect(pDpyInfo)
 PDPYINFO pDpyInfo;
 {
   Display *fromDpy = pDpyInfo->fromDpy;
+  Display   *toDpy = pDpyInfo->toDpy;
   PDPYXTRA pDpyXtra;
 
   debug("disconnecting\n");
@@ -1440,6 +1626,24 @@ PDPYINFO pDpyInfo;
 #ifdef WIN_2_X
   assert (fromDpy != fromWin);
 #endif
+
+  XGetInputFocus(toDpy, &pDpyInfo->selWinTo, &pDpyInfo->selRevTo);
+  XSetInputFocus(toDpy, PointerRoot, 0, CurrentTime);
+  XSync(toDpy, False);
+
+  XFlush(fromDpy);
+
+  if (pDpyInfo->selWinFrom != None) {
+    Display  *fromDpy = pDpyInfo->fromDpy;
+    Window selWinFrom = pDpyInfo->selWinFrom;
+    int    selRevFrom = pDpyInfo->selRevFrom;
+    XErrorHandler old_handler = XSetErrorHandler(bad_window_handler);
+
+    XSetInputFocus(fromDpy, selWinFrom, selRevFrom, CurrentTime);
+    XSync (fromDpy, False);
+    (void) XSetErrorHandler(old_handler);
+  }
+
   if (pDpyInfo->big != None) XUnmapWindow(fromDpy, pDpyInfo->big);
   XUngrabKeyboard(fromDpy, CurrentTime);
   XUngrabPointer(fromDpy, CurrentTime);
@@ -1452,11 +1656,14 @@ PDPYINFO pDpyInfo;
     }
   } /* END if */
 
-  XFlush(fromDpy);
+  XSync(fromDpy, False);
 
   /* force normal state on to display: */
-  if (doAutoUp)
+  if (doAutoUp) {
     FakeThingsUp(pDpyInfo);
+    RestoreKeyboardState();
+  }
+
 } /* END DoDisconnect */
 
 static void RegisterEventHandlers(pDpyInfo)
@@ -1480,8 +1687,6 @@ PDPYINFO pDpyInfo;
   XSAVECONTEXT(fromDpy, trigger, KeyPress,        ProcessKeyEvent);
   XSAVECONTEXT(fromDpy, trigger, KeyRelease,      ProcessKeyEvent);
   XSAVECONTEXT(fromDpy, trigger, ConfigureNotify, ProcessConfigureNotify);
-  XSAVECONTEXT(fromDpy, trigger, ClientMessage,   ProcessClientMessage);
-  XSAVECONTEXT(fromDpy, trigger, ClientMessage,   ProcessClientMessage);
   XSAVECONTEXT(fromDpy, trigger, ClientMessage,   ProcessClientMessage);
   XSAVECONTEXT(fromDpy, None,    MappingNotify,   ProcessMapping);
 
@@ -1636,6 +1841,7 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
                       vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],
                       0);
     XFlush(pShadow->dpy);
+    pShadow->flush = False;
   } /* END for */
 
   return False;
@@ -1741,6 +1947,7 @@ XButtonEvent *pEv;
         XTestFakeButtonEvent(pShadow->dpy, toButton, True, 0);
         debug("from button %d down, to button %d down\n", pEv->button,toButton);
         XFlush(pShadow->dpy);
+	pShadow->flush = False;
       } /* END for */
       if (doAutoUp)
         FakeAction(pDpyInfo, FAKE_BUTTON, toButton, True);
@@ -1748,7 +1955,7 @@ XButtonEvent *pEv;
     if (doEdge) break;
 
     /* check if more than one button pressed */
-    state = pEv->state;
+    state = pEv->state & (Button1Mask|Button2Mask|Button3Mask|Button4Mask|Button5Mask);
     switch (pEv->button) {
     case Button1: state &= ~Button1Mask; break;
     case Button2: state &= ~Button2Mask; break;
@@ -1763,6 +1970,8 @@ XButtonEvent *pEv;
       debug("awaiting button release before disconnecting\n");
       pDpyInfo->mode = X2X_CONN_RELEASE;
     }
+    break;
+  default:
     break;
   } /* END switch mode */
   return False;
@@ -1799,7 +2008,7 @@ XButtonEvent *pEv;
   if ((pDpyInfo->mode == X2X_AWAIT_RELEASE) ||
       (pDpyInfo->mode == X2X_CONN_RELEASE)) {
     /* make sure that all buttons are released */
-    state = pEv->state;
+    state = pEv->state & (Button1Mask|Button2Mask|Button3Mask|Button4Mask|Button5Mask);
     switch (pEv->button) {
     case Button1: state &= ~Button1Mask; break;
     case Button2: state &= ~Button2Mask; break;
@@ -1847,6 +2056,11 @@ XKeyEvent *pEv;
   keysym = XKeycodeToKeysym(pDpyInfo->fromDpy, pEv->keycode, 0);
   bPress = (pEv->type == KeyPress);
 
+#ifdef DEBUG
+  printf("key '%s' %s (state=0x%x)\n",
+	XKeysymToString(keysym), (bPress ? "pressed" : "released"), pEv->state);
+#endif
+
   /* If CapsLock is on, we need to do some funny business to make sure the */
   /* "to" display does the right thing */
   if(doCapsLkHack && (pEv->state & 0x2))
@@ -1854,13 +2068,14 @@ XKeyEvent *pEv;
     /* Throw away any explicit shift events (they're faked as neccessary) */
     if((keysym == XK_Shift_L) || (keysym == XK_Shift_R)) return False;
 
-    /* If the shift key is pressed, do the shift, unless the keysym */
-    /* is an alpha key, in which case we invert the shift logic */
-    DoFakeShift = (pEv->state & 0x1);
-    if(((keysym >= XK_A) && (keysym <= XK_Z)) ||
-       ((keysym >= XK_a) && (keysym <= XK_z)))
-      DoFakeShift = !DoFakeShift;
-  }
+      /* If the shift key is pressed, do the shift, unless the keysym */
+      /* is an alpha key, in which case we invert the shift logic */
+      DoFakeShift = (pEv->state & 0x1);
+      if(((keysym >= XK_A) && (keysym <= XK_Z)) ||
+         ((keysym >= XK_a) && (keysym <= XK_z)))
+        DoFakeShift = !DoFakeShift;
+      debug("DoFakeShift %d\n", DoFakeShift);
+    }
 
   for (pSticky = stickies; pSticky; pSticky = pSticky->pNext)
     if (keysym == pSticky->keysym)
@@ -1888,17 +2103,22 @@ XKeyEvent *pEv;
         }
 
         if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, False, 0);
-        XFlush(pShadow->dpy);
+	XFlush(pShadow->dpy);
+	pShadow->flush = False;
       } /* END if */
     } /* END for */
   } else {
+    Bool invert = (pEv->state & 0x2) && (pEv->state & 0x1);
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
       toShiftCode = XKeysymToKeycode(pShadow->dpy, XK_Shift_L);
       if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
-        if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, True, 0);
-        XTestFakeKeyEvent(pShadow->dpy, keycode, bPress, 0);
-        if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, False, 0);
-        XFlush(pShadow->dpy);
+	if (invert && toShiftCode)
+	  XTestFakeKeyEvent(pShadow->dpy, toShiftCode, True, 0);
+	XTestFakeKeyEvent(pShadow->dpy, keycode, bPress, 0);
+	if (invert && toShiftCode)
+	  XTestFakeKeyEvent(pShadow->dpy, toShiftCode, False, 0);
+	XFlush(pShadow->dpy);
+	pShadow->flush = False;
       } /* END if */
     } /* END for */
     if (doAutoUp)
@@ -2010,6 +2230,7 @@ XPropertyEvent *pEv;
     if (pDpyXtra->sState == SELSTATE_WAIT) {
       pDpyXtra->sState = SELSTATE_ON;
       XSetSelectionOwner(dpy, XA_PRIMARY, pDpyXtra->propWin, pEv->time);
+      XSync(dpy, False);
     } else if (dpy == pDpyInfo->sDpy) {
       if (pDpyInfo->sTime == pEv->time) {
         /* oops, need to ensure uniqueness */
@@ -2114,6 +2335,8 @@ XSelectionRequestEvent *pSelReq;
   XSelectionEvent sendEv;
 
   sendEv.type      = SelectionNotify;
+  sendEv.serial    = 0;
+  sendEv.send_event= pSelReq->send_event;
   sendEv.display   = pSelReq->display;
   sendEv.requestor = pSelReq->requestor;
   sendEv.selection = pSelReq->selection;
@@ -2197,24 +2420,33 @@ XMappingEvent       *pEv;
 
 static void FakeAction(pDpyInfo, type, thing, bDown)
 PDPYINFO pDpyInfo;
-unsigned int thing;
+int type;
+KeySym thing;
 Bool bDown;
 {
+  Display *fromDpy = pDpyInfo->fromDpy;
+  KeyCode code = 0;
   PFAKE *ppFake;
   PFAKE pFake;
+
+  if (type == FAKE_KEY)
+     code = XKeysymToKeycode(fromDpy, thing);
+  else
+     code = thing;
 
   /* find the associated button, or the last record, whichever comes first */
   for (ppFake = &(pDpyInfo->pFakeThings);
        (*ppFake &&
-        (((*ppFake)->type != type) || ((*ppFake)->thing != thing)));
+	(((*ppFake)->type != type) || ((*ppFake)->code != code)));
        ppFake = &((*ppFake)->pNext));
 
   if (bDown) { /* key down */
     if (*ppFake == NULL) { /* need a new record */
-      pFake = (PFAKE)malloc(sizeof(FAKE));
+      pFake = (PFAKE)xmalloc(sizeof(FAKE));
       pFake->pNext = NULL; /* always at the end of the list */
       pFake->type = type;
       pFake->thing = thing;
+      pFake->code = code;
       *ppFake = pFake;
     } /* END if */
   } else { /* key up */
@@ -2244,17 +2476,15 @@ PDPYINFO pDpyInfo;
         if (type == FAKE_KEY) { /* key goes up */
           if ((keycode = XKeysymToKeycode(pShadow->dpy, pFake->thing))) {
             XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
+	    pShadow->flush = True;
             debug("key 0x%x up\n", pFake->thing);
           } /* END if */
         } else { /* button goes up */
           XTestFakeButtonEvent(pShadow->dpy, pFake->thing, False, 0);
+	  pShadow->flush = True;
           debug("button %d up\n", pFake->thing);
         } /* END if/else */
       } /* END for */
-
-      /* flush everything at once */
-      for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
-        XFlush(pShadow->dpy);
 
       /* get next and free current */
       pNext = pFake->pNext;
@@ -2263,6 +2493,13 @@ PDPYINFO pDpyInfo;
 
     pDpyInfo->pFakeThings = NULL;
   } /* END if */
+
+  /* flush everything at once */
+  for (pShadow = shadows; pShadow; pShadow = pShadow->pNext)
+    if (pShadow->flush) {
+      XFlush(pShadow->dpy);
+      pShadow->flush = False;
+    }
 
 } /* END FakeThingsUp */
 
@@ -2339,7 +2576,7 @@ int MoveWindowToScreen(PDPYINFO pDpyInfo)
     /* prevent an application from stealing the focus */
     debug("Using SendInput to synthesize a mouse click\n");
 
-    pInputs = (LPINPUT) malloc (2*sizeof(INPUT));
+    pInputs = (LPINPUT) xmalloc (2*sizeof(INPUT));
 
     pInputs[0].type           = INPUT_MOUSE;
     pInputs[0].mi.dx          = 0;
@@ -2423,7 +2660,7 @@ PDPYINFO pDpyInfo;
 int x,y;
 {
 
-  debug("disconnecting\n");
+  debug("disconnecting (Win2x)\n");
   pDpyInfo->mode = X2X_DISCONNECTED;
 
   /* If we own the X selection, then windows has it! */
@@ -2719,7 +2956,7 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
           /* If the length is bad just ignore */
           if (len > 0) {
             if (pDpyInfo->winSelText != NULL) free(pDpyInfo->winSelText);
-            pDpyInfo->winSelText = malloc(len + 10);
+            pDpyInfo->winSelText = xmalloc(len + 10);
             if (pDpyInfo->winSelText != NULL)
               strcpy(pDpyInfo->winSelText, lptstr);
             /* XXX mdh - hope this does (null) as expected! */
@@ -2785,12 +3022,13 @@ WinProcessMessage (HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     case WM_SYSCOMMAND:
       debug("WM_SYSCOMMAND with wParam %d (0x%x)\n", wParam, wParam);
       if (wParam == SC_SCREENSAVE) {
-        PSHADOW   pShadow;
-        pDpyInfo->winSSave = 1;
-        for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-          XActivateScreenSaver(pShadow->dpy);
-          XFlush(pShadow->dpy);
-        } /* END for shadow */
+	PSHADOW   pShadow;
+	pDpyInfo->winSSave = 1;
+	for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
+	  XActivateScreenSaver(pShadow->dpy);
+	  XFlush(pShadow->dpy);
+	  pShadow->flush = False;
+	} /* END for shadow */
       }
       /* Fall through */
     case WM_SYNCPAINT:
@@ -2870,7 +3108,9 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
     if (delta < 0) delta = -delta;
     if (delta > pDpyInfo->unreasonableDelta) {
       if (pDpyInfo->unreasonableCount++ < MAX_UNREASONABLES) {
-        return;
+	debug("Unreasonable x delta last = %d this = %d\n",
+	      pDpyInfo->lastFromX, fromX);
+	return;
       }
       pDpyInfo->unreasonableCount = 0;
     }
@@ -2918,6 +3158,7 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
       XTestFakeMotionEvent(pShadow->dpy, toScreenNum, pDpyInfo->xTables[toScreenNum][x],
         pDpyInfo->yTables[toScreenNum][y], 0);
       XFlush(pShadow->dpy);
+      pShadow->flush = False;
     } /* END for */
     return;
 
@@ -2939,6 +3180,7 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
       debug("from button %d %s, to button %d %s\n",
             button, down ? "down":"up", toButton, down ? "down":"up");
       XFlush(pShadow->dpy);
+      pShadow->flush = False;
     } /* END for */
     if (doAutoUp)
       FakeAction(pDpyInfo, FAKE_BUTTON, toButton, down);
@@ -2964,6 +3206,7 @@ void SendButtonClick(pDpyInfo, button)
         debug("Click from button %d, to button %d\n",
                button, toButton);
         XFlush(pShadow->dpy);
+	pShadow->flush = False;
       } /* END for */
     else
       debug("to only has %d buttons, cant clikc from %d -> to %d\n",
@@ -3194,6 +3437,7 @@ void SendKeyEvent(PDPYINFO pDpyInfo, KeySym keysym, int down,
         XTestFakeKeyEvent(pShadow->dpy, keycode, down, 0);
 
       XFlush(pShadow->dpy);
+      pShadow->flush = False;
     } /* END if */
   } /* END for */
   if (doAutoUp)
@@ -3318,3 +3562,14 @@ XSelectionEvent *pEv;
 } /* END ProcessSelectionNotify */
 
 #endif /* WIN_2_X only routines */
+
+static void *xmalloc(size)
+size_t size;
+{
+  void * ptr = malloc(size);
+  if (!ptr) {
+    fprintf(stderr, "%s - error: %s\n", programStr, strerror(errno));
+    exit(1);
+  }
+  return memset(ptr, 0, size);
+}
