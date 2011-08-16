@@ -5,7 +5,7 @@
 
 /* This table generated from cygwin /usr/include/w32api/winuser.h
  * with :
- * grep WM_ /usr/include/w32api/winuser.h | 
+ * grep WM_ /usr/include/w32api/winuser.h |
  *          sed 's/#define \([^ ]*\) \(.*\)/{\2,\"\1\"},/' > foo
  * then edited!
  */
@@ -224,7 +224,7 @@ char *msgtotext(int msg)
     for (i=0; i < MAX_TEXT; i++) msgstr[i] = unknown;
     for (i=0; msginfo[i].num < 32767; i++) {
       if (msginfo[i].num >= MAX_TEXT)
-	printf("Warning: ignore %d, %s\n", msginfo[i].num, 
+	printf("Warning: ignore %d, %s\n", msginfo[i].num,
 	       msginfo[i].msg);
       else {
 	if (msgstr[msginfo[i].num] != unknown)

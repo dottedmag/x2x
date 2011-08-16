@@ -1632,7 +1632,7 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
     {
       DPMSForceLevel(pShadow->dpy, DPMSModeOn);
     }
-      
+
     XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
                       vert?pDpyInfo->xTables[toScreenNum][pEv->x_root]:toCoord,
                       vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],

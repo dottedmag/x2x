@@ -22,7 +22,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 //  USA.
 //
-// If the source code for the VNC system is not available from the place 
+// If the source code for the VNC system is not available from the place
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
@@ -33,15 +33,15 @@
 #include <X11/Xlib.h>
 #include <X11/keysymdef.h>
 
-// A single key press on the client may result in more than one 
+// A single key press on the client may result in more than one
 // going to the server.
 
 #define MaxKeysPerKey 4
 #define VoidKeyCode XK_VoidSymbol
 
 // keycodes contains the keysyms terminated by an VoidKeyCode.
-// The releaseModifiers is a set of ORed flags indicating whether 
-// particular modifier-up messages should be sent before the keys 
+// The releaseModifiers is a set of ORed flags indicating whether
+// particular modifier-up messages should be sent before the keys
 // and modifier-down after.
 
 #define KEYMAP_LCONTROL 0x0001

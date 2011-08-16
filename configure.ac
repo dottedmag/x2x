@@ -21,7 +21,7 @@ XORG_RELEASE_VERSION
 
 AC_ARG_ENABLE([win32],
     AS_HELP_STRING(
-        [--enable-win32], 
+        [--enable-win32],
         [enable Win32 support (-fromwin option). Disabled by default]))
 
 AC_SUBST(X11_CFLAGS)
