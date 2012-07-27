@@ -219,7 +219,6 @@ typedef struct {
   /* stuff on "from" display */
   Display *fromDpy;
   Atom    fromDpyUtf8String;
-  Atom    fromDpyTargets;
   Window  root;
   Window  trigger;
   Window  big;
@@ -259,7 +258,6 @@ typedef struct {
   /* stuff on "to" display */
   Display *toDpy;
   Atom    toDpyUtf8String;
-  Atom    toDpyTargets;
   Window  selWin;
   unsigned int inverseMap[N_BUTTONS + 1]; /* inverse of button mapping */
 
@@ -299,7 +297,6 @@ typedef struct _shadow {
 /* sticky keys */
 typedef struct _sticky {
   struct _sticky *pNext;
-  Bool   isPress;
   KeySym keysym;
 } STICKY, *PSTICKY;
 
@@ -353,7 +350,6 @@ static PSTICKY stickies     = NULL;
 static Bool    doBtnBlock   = False;
 static Bool    doCapsLkHack = False;
 static Bool    doClipCheck  = False;
-static Bool    singleSticky = False;
 static Bool    doDpmsMouse  = False;
 static int     logicalOffset= 0;
 static int     nButtons     = 0;
@@ -654,7 +650,6 @@ char **argv;
       if ((keysym = XStringToKeysym(argv[arg])) != NoSymbol) {
         pNewSticky = (PSTICKY)malloc(sizeof(STICKY));
         pNewSticky->pNext  = stickies;
-        pNewSticky->isPress = True;
         pNewSticky->keysym = keysym;
         stickies = pNewSticky;
 
@@ -662,9 +657,6 @@ char **argv;
       } else {
         printf("x2x: warning: can't translate %s\n", argv[arg]);
       }
-    } else if (!strcasecmp(argv[arg], "-singlesticky")) {
-      singleSticky = True;
-      debug("behaviour of sticky keys will be single\n", argv[arg]);
     } else if (!strcasecmp(argv[arg], "-buttonmap")) {
       if (++arg >= argc) Usage();
       button = atoi(argv[arg]);
@@ -744,7 +736,6 @@ static void Usage()
   printf("       -clipcheck\n");
   printf("       -shadow <DISPLAY>\n");
   printf("       -sticky <sticky key>\n");
-  printf("       -singlesticky\n");
   printf("       -label <LABEL>\n");
   printf("       -title <TITLE>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
@@ -993,12 +984,10 @@ PDPYINFO pDpyInfo;
   if (fromDpy != fromWin) {
 #endif
     pDpyInfo->fromDpyUtf8String = XInternAtom(fromDpy, UTF8_STRING, False);
-    pDpyInfo->fromDpyTargets = XInternAtom(fromDpy, "TARGETS", False);
 #ifdef WIN_2_X
   }
 #endif
   pDpyInfo->toDpyUtf8String = XInternAtom(toDpy, UTF8_STRING, False);
-  pDpyInfo->toDpyTargets = XInternAtom(toDpy, "TARGETS", False);
 
   /* other dpyinfo values */
   pDpyInfo->mode        = X2X_DISCONNECTED;
@@ -1289,11 +1278,11 @@ PDPYINFO pDpyInfo;
 
     /* vertical conversion table */
     for (counter = 0; counter < fromHeight; ++counter)
-      yTable[counter] = (counter * (toHeight - 1)) / (fromHeight - 1);
+      yTable[counter] = (counter * toHeight) / fromHeight;
 
     /* horizontal conversion table entries */
     for (counter = 0; counter < fromWidth; ++counter)
-      xTable[counter] = (counter * (toWidth - 1)) / (fromWidth - 1);
+      xTable[counter] = (counter * toWidth) / fromWidth;
 
     /* adjustment for boundaries */
     if (vertical) {
@@ -1406,10 +1395,7 @@ PDPYINFO pDpyInfo;
   PSHADOW   pShadow;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    if (doDpmsMouse)
-    {
-      DPMSForceLevel(pShadow->dpy, DPMSModeOn);
-    }
+    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
     XFlush(pShadow->dpy);
   }
 
@@ -1632,11 +1618,11 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
     {
       DPMSForceLevel(pShadow->dpy, DPMSModeOn);
     }
-      
-    XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
-                      vert?pDpyInfo->xTables[toScreenNum][pEv->x_root]:toCoord,
-                      vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],
-                      0);
+    Window rootWindow;
+    rootWindow = XRootWindow(pShadow->dpy, toScreenNum);
+    XWarpPointer(pShadow->dpy, None, rootWindow, 0, 0, 0, 0,
+                 vert ? pDpyInfo->xTables[toScreenNum][pEv->x_root] : toCoord,
+                 vert ? toCoord: pDpyInfo->yTables[toScreenNum][pEv->y_root]);
     XFlush(pShadow->dpy);
   } /* END for */
 
@@ -1867,22 +1853,8 @@ XKeyEvent *pEv;
       toShiftCode = XKeysymToKeycode(pShadow->dpy, XK_Shift_L);
       if ((keycode = XKeysymToKeycode(pShadow->dpy, keysym))) {
         if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, True, 0);
-        if( singleSticky )
-        {
-          // in singleSticky mode we ignore sticky button releases
-          if( bPress )
-          {
-            XTestFakeKeyEvent(pShadow->dpy, keycode, pSticky->isPress, 0);
-            pSticky->isPress = !pSticky->isPress;
-          }
-        }
-        else
-        {
-          // in non-singleSticky mode we process press/release normally
-          XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
-          XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
-        }
-
+        XTestFakeKeyEvent(pShadow->dpy, keycode, True, 0);
+        XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
         if(DoFakeShift) XTestFakeKeyEvent(pShadow->dpy, toShiftCode, False, 0);
         XFlush(pShadow->dpy);
       } /* END if */
@@ -1938,33 +1910,22 @@ XSelectionRequestEvent *pEv;
   PDPYXTRA pDpyXtra = GETDPYXTRA(dpy, pDpyInfo);
   Display *otherDpy;
   Atom utf8string;
-  Atom targets;
-  Atom data[10];
-  int n = 0;
 
   if (dpy == pDpyInfo->fromDpy) {
     utf8string = pDpyInfo->fromDpyUtf8String;
-    targets = pDpyInfo->fromDpyTargets;
   } else {
     utf8string = pDpyInfo->toDpyUtf8String;
-    targets = pDpyInfo->toDpyTargets;
   }
 
-  debug("selection request\n");
+    debug("selection request\n");
 
+  /* bribe me to support more general selection requests,
+     or send me the code to do it. */
   if ((pDpyXtra->sState != SELSTATE_ON) ||
       (pEv->selection != XA_PRIMARY) ||
-      (pEv->target > XA_LAST_PREDEFINED && pEv->target != utf8string && pEv->target != targets)) { /* bad request, punt request */
+      (pEv->target > XA_LAST_PREDEFINED && pEv->target != utf8string)) { /* bad request, punt request */
     pEv->property = None;
     SendSelectionNotify(pEv); /* blam! */
-  } else if (pEv->target == targets) {
-    // send targets supported -> UTF8_STRING, STRING, TARGETS
-    n = 0;
-    data[n++] = utf8string;
-    data[n++] = XA_STRING;
-    data[n++] = targets;
-    XChangeProperty(dpy, pEv->requestor, pEv->property, XA_ATOM, 32, PropModeReplace, (unsigned char *) data, n);
-    SendSelectionNotify(pEv);
   } else {
     otherDpy = pDpyXtra->otherDpy;
     SendPing(otherDpy, GETDPYXTRA(otherDpy, pDpyInfo)); /* get started */
@@ -1973,7 +1934,7 @@ XSelectionRequestEvent *pEv;
       pDpyInfo->sEv.property = None;
       SendSelectionNotify(&(pDpyInfo->sEv)); /* blam! */
     } /* END if InProg */
-    pDpyInfo->sDpy = otherDpy;
+    pDpyInfo->sDpy  = otherDpy;
     pDpyInfo->sEv = *pEv;
   } /* END if relaySel */
   return False;
@@ -2363,10 +2324,7 @@ int x,y;
   PSHADOW   pShadow;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    if (doDpmsMouse)
-    {
-      DPMSForceLevel(pShadow->dpy, DPMSModeOn);
-    }
+    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
     XFlush(pShadow->dpy);
   }
 
