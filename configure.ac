@@ -4,12 +4,12 @@ dnl
 dnl BSD-3
 dnl
 
-AC_PREREQ([2.57])
-AC_INIT(x2x,[1.30-rc1],[http://x2x.dottedmag.net/newticket],x2x)
+AC_PREREQ([2.69])
+AC_INIT([x2x],[1.30-rc1],[http://x2x.dottedmag.net/newticket],[x2x])
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -30,4 +30,5 @@ AC_SUBST(enable_win32)
 
 AM_CONDITIONAL(WIN32, [test x$enable_win32 = xyes])
 
-AC_OUTPUT([Makefile])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
