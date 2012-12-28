@@ -1620,11 +1620,11 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
     {
       DPMSForceLevel(pShadow->dpy, DPMSModeOn);
     }
-    Window rootWindow;
-    rootWindow = XRootWindow(pShadow->dpy, toScreenNum);
-    XWarpPointer(pShadow->dpy, None, rootWindow, 0, 0, 0, 0,
-                 vert ? pDpyInfo->xTables[toScreenNum][pEv->x_root] : toCoord,
-                 vert ? toCoord: pDpyInfo->yTables[toScreenNum][pEv->y_root]);
+
+    XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
+                      vert?pDpyInfo->xTables[toScreenNum][pEv->x_root]:toCoord,
+                      vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],
+                      0);
     XFlush(pShadow->dpy);
   } /* END for */
 

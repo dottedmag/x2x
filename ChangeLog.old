@@ -40,7 +40,7 @@ x2xwin.rc (resource description)
   if buttons 4/5 are not ok. [bug from chaiken]
 
 - Check for not becomming foreground, and try to recover, become aggresive
-  if events are turning up on the wrong window  [Bug from Thomas] 
+  if events are turning up on the wrong window  [Bug from Thomas]
 
 - Fix cursor warp (west) so it goes one left of return coordinate
   [Bug from Thomas]

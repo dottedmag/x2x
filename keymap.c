@@ -21,7 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 //  USA.
 //
-// If the source code for the VNC system is not available from the place 
+// If the source code for the VNC system is not available from the place
 // whence you received this file, check http://www.uk.research.att.com/vnc or contact
 // the authors on vnc@uk.research.att.com for information on obtaining it.
 
@@ -123,7 +123,7 @@ static const vncKeymapping keymap[] = {
 static unsigned char buf[4];
 static unsigned char keystate[256];
 
-KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) { 
+KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
   int numkeys = 0;
   int mapsize, i;
   int extended;
@@ -137,7 +137,7 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
   printf(" keyData %04x ", (unsigned int) keyData);
 #endif
 
-  if (extended) { 
+  if (extended) {
 #ifdef DEBUG
     printf(" (extended) ");
 #endif
@@ -150,10 +150,10 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
       break;
     }
   }
-    
+
   // We try looking it up in our table
   mapsize = sizeof(keymap) / sizeof(vncKeymapping);
-        
+
   // Look up the desired code in the table
   for (i = 0; i < mapsize; i++) {
     if (keymap[i].wincode == virtkey) {
@@ -161,7 +161,7 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
       break;
     }
   }
-    
+
   if (numkeys != 0) {
 #ifdef DEBUG
     UINT key = kas.keycodes[numkeys-1];
@@ -184,9 +184,9 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
 	  ((keystate[VK_CONTROL] & 0x80) != 0) ) {
 
       // If the key means anything in this keyboard layout
-      if  ( (ret >= 1) && 
+      if  ( (ret >= 1) &&
 	    ( ( (*buf >= 32) && (*buf <= 126) ) ||
-	      ( (*buf >= 160) && (*buf <= 255) ) ) 
+	      ( (*buf >= 160) && (*buf <= 255) ) )
 	    ) {
 
 	// Send the modifiers up, then the keystroke, then mods down
@@ -194,16 +194,16 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
 	// to use it for doing Ctl-@ etc. (though not under Win95 --
 	// see below)
 
-	if (GetKeyState(VK_LCONTROL) & 0x8000) 
+	if (GetKeyState(VK_LCONTROL) & 0x8000)
 	  kas.releaseModifiers |= KEYMAP_LCONTROL;
 
-	if (GetKeyState(VK_LMENU)    & 0x8000) 
+	if (GetKeyState(VK_LMENU)    & 0x8000)
 	  kas.releaseModifiers |= KEYMAP_LALT;
 
-	if (GetKeyState(VK_RMENU)    & 0x8000) 
+	if (GetKeyState(VK_RMENU)    & 0x8000)
 	  kas.releaseModifiers |= KEYMAP_RALT;
 
-	// This is for windows 95, and possibly other systems.  
+	// This is for windows 95, and possibly other systems.
 	// The above GetKeyState calls don't work in 95 - they always return 0.
 	// But if we're here at all we know that control and alt are pressed, so let's
 	// raise all Control and Alt keys if we haven't registered any yet.
@@ -223,16 +223,16 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
 #ifdef DEBUG
 	printf("\n");
 #endif
-      } 
+      }
 
-    } 
-        
+    }
+
     // If not a ctrl-alt key
     if (numkeys == 0) {
 
-      // There are no keysyms corresponding to control characters 
-      // Eg Ctrl F.  The server already knows whether the control 
-      // key is pressed. So we are interested in the key that would be 
+      // There are no keysyms corresponding to control characters
+      // Eg Ctrl F.  The server already knows whether the control
+      // key is pressed. So we are interested in the key that would be
       // there if the Ctrl were not pressed.
       keystate[VK_CONTROL] = keystate[VK_LCONTROL] = keystate[VK_RCONTROL] = 0;
 
@@ -240,10 +240,10 @@ KeyActionSpec PCtoX(UINT virtkey, DWORD keyData) {
       if (ret < 0) {
 	switch (*buf) {
 	case '`' :
-	  kas.keycodes[numkeys++] = XK_dead_grave; 
+	  kas.keycodes[numkeys++] = XK_dead_grave;
 	  break;
 	case '\'' :
-	  kas.keycodes[numkeys++] = XK_dead_acute; 
+	  kas.keycodes[numkeys++] = XK_dead_acute;
 	  break;
 	case '~' :
 	  kas.keycodes[numkeys++] = XK_dead_tilde;
