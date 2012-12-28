@@ -1,0 +1,183 @@
+.nh
+.TH x2x 1
+.SH NAME
+x2x \- X to X connection
+.SH SYNTAX
+\f x2x\fR  <[-to <DISPLAY>] | [-from <DISPLAY>]> [options...]
+.SH DESCRIPTION
+x2x allows the keyboard and mouse on one ("from") X display to be used to
+control another ("to") X display.  Since x2x uses the XTEST extension,
+the "to" X display must support XTEST.
+
+In the default interface, x2x puts a window on the "from" display.
+This window is labeled with the name of the "to" display.  Keystrokes
+typed into this window go to the window on the "to" display that has
+the input focus.  Clicking on the x2x window causes the mouse on the
+"from" display to control the cursor on the "to" display.  Performing
+a subsequent multiple button click on the "to" display returns control
+to the "from" display.
+
+If the -east or -west options are specified on the command line, x2x
+starts up with a different interface.  When the mouse moves to the
+(east or west) side of the default screen on the "from" display, the
+cursor slides over to the "to" display.  When the mouse returns to
+to side of the "to" display that it entered, it slides back onto
+the "from" display.
+
+Unless the -nosel option is specified, x2x relays X selections from
+one display to the other.
+
+Here are a few hints for eXcursion users (based on Intel version
+2.1.309).  First, use the -big option.  Second, in the control panel,
+under mouse, check the box that enables "Automatically Capture Text on
+Button Up."  X selections will then automatically move into the
+Windows clipboard.  As is the case with all X applications running on
+2.1.309 (including x2x), you will need to do an extra mouse click
+after performing the X selection for this operation to work.  x2x is
+known to work poorly with eXcursion running on Windows 95, probably
+due to the Windows 95 task scheduler.  x2x does work well with eXcursion
+running on Windows NT.  
+
+The hints for eXcursion are also valid for Exceed, with the exception
+that X selections work better, as long as you are using x2x version
+1.25 or later.
+
+.SH OPTIONS
+Either the -to option or the -from option (or both) must be specified.
+.TP
+.B \-to \fIdisplay\fP
+.IP 
+Indicates the ("to") display that is remotely controlled by the "from" display.
+Default is equivalent to the default display.
+.TP
+.B \-from \fIdisplay\fP
+.IP 
+Indicates the ("from") display that remotely controls the "to" display.
+Default is equivalent to the default display.
+.TP
+.B \-east
+.IP 
+Slide off the east side of the "to" display onto the "from" display.
+.TP
+.B \-west
+.IP 
+Slide off the west side of the "to" display onto the "from" display.
+.TP
+.B \-font \fIfontname\fP
+.IP 
+The font used in the x2x window. (Overridden by -east or -west.)
+.TP
+.B \-geometry \fIspecification\fP
+.IP 
+The X geometry specification for the x2x window.  
+(Overridden by -east or -west.)
+.TP
+.B \-wait
+.IP 
+Tells x2x to poll the "to" and "from" displays at startup until they
+are ready.  Useful for login scripts.
+.TP
+.B \-big
+.IP 
+Workaround for a bug in the cursor grab implementations of at least one
+X server.  Put a big window over the "to" display in order to force the
+X server to track the cursor.
+.TP
+.B \-buttonblock
+.IP 
+If this option is enabled with -east or -west, the cursor will not
+slide back onto the "from" display when one or more mouse buttons
+are pressed.
+.TP
+.B \-nomouse
+.IP 
+Don't capture the mouse.
+(Overridden by -east or -west.)
+.TP
+.B \-nopointermap
+.IP 
+Since x2x uses XTEST, which sends input at a lower level than the
+pointer button mapping, x2x needs to understand the "to" display's
+button mapping and do appropriate conversion.  Use this option
+to turn off the pointer button conversion.
+.TP
+.B \-nosel
+.IP 
+Don't relay the X selection between displays.
+.TP
+.B \-noautoup
+.IP 
+Normally, the autoup feature in x2x automatically lifts up all keys and 
+mouse buttons when it removes the cursor from the "from" display.
+.B 
+Note: the autoup feature changes the state of lock functions like 
+.B
+Caps Lock.  The state of the lock function may not correspond to
+.B
+the state of the keyboard LEDs!
+To disable this feature, use the \-noautoup command line option.
+.TP
+.B \-resurface
+.IP 
+Ugly hack to work-around window manager ugliness.  The -east and -west
+modes actually put a small window on the side of the "from" display.
+This option causes this window to resurface itself if another window
+ever obscures it.  This option can cause really nasty behavior if another
+application tries to do the same thing.  Useful for login scripts.
+.TP
+.B \-shadow \fIdisplay\fP
+.IP 
+Also sends mouse movements and keystrokes to this display.  Useful
+for demos.  Amaze your friends: specify multiple shadows.
+.TP
+.B \-sticky \fIsticky-key\fP
+.IP 
+This option is primarily for "lock" keys like Caps_Lock.  If a lock
+key only seems to work on every other press, try this option.  The
+sticky option prevents autoup for the specified key.  Look in
+/usr/include/X11/keysymdef.h for a list of valid names of keys
+(remove the leading XK_).
+.SH AUTHOR
+David Chaiken
+.br
+(chaiken@pa.dec.com)
+.SH BUGS
+This software is experimental!  Heaven help you if your network
+connection should go down.  Caveat hacker.  TANSTAAFL.
+.SH LAWYERESE
+Copyright (c) 1997
+Digital Equipment Corporation.  All rights reserved.
+
+By downloading, installing, using, modifying or distributing this
+software, you agree to the following:
+
+1. CONDITIONS. Subject to the following conditions, you may download,
+install, use, modify and distribute this software in source and binary forms:
+
+a) Any source code, binary code and associated documentation
+(including the online manual) used, modified or distributed must
+reproduce and retain the above copyright notice, this list of
+conditions and the following disclaimer.
+
+b) No right is granted to use any trade name, trademark or logo of
+Digital Equipment Corporation.  Neither the "Digital Equipment
+Corporation" name nor any trademark or logo of Digital Equipment
+Corporation may be used to endorse or promote products derived from
+this software without the prior written permission of Digital
+Equipment Corporation.
+
+2.  DISCLAIMER.  THIS SOFTWARE IS PROVIDED BY DIGITAL "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED.IN NO EVENT SHALL DIGITAL BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Windows 95 and Windows NT are trademarks of Microsoft Corporation.
+.br
+Exceed is a trademark of Hummingbird Communications Ltd.

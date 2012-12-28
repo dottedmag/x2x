@@ -1,0 +1,12 @@
+XCOMM $XConsortium: Imakefile,v 1.5 91/07/17 16:07:10 gildea Exp $
+        DEPLIBS = $(DEPXTESTLIB) $(DEPEXTENSIONLIB) $(DEPXLIB)
+LOCAL_LIBRARIES = $(XTESTLIB) $(EXTENSIONLIB) $(XLIB)
+
+           SRCS = lawyerese.c x2x.c format.c
+           OBJS = lawyerese.o x2x.o format.o
+  PROTO_DEFINES = 
+
+             CC = gcc
+    CDEBUGFLAGS = -O
+
+ComplexProgramTarget(x2x)
