@@ -90,6 +90,7 @@
 #include <X11/Xos.h>
 #include <X11/extensions/XTest.h>
 #include <X11/keysym.h>
+#include <X11/XKBlib.h>
 
 #ifdef WIN_2_X
 #define _WIN32_WINNT 0x0500
@@ -1841,7 +1842,7 @@ XKeyEvent *pEv;
   Bool      DoFakeShift = False;
   KeyCode   toShiftCode;
 
-  keysym = XKeycodeToKeysym(pDpyInfo->fromDpy, pEv->keycode, 0);
+  keysym = XkbKeycodeToKeysym(pDpyInfo->fromDpy, pEv->keycode, 0, 0);
   bPress = (pEv->type == KeyPress);
 
   /* If CapsLock is on, we need to do some funny business to make sure the */
