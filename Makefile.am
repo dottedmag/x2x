@@ -13,7 +13,6 @@ x2x_SOURCES = x2x.c
 nodist_x2x_SOURCES = lawyerese.c
 
 man1_MANS = x2x.1
-dist_man_MANS = x2x.1
 
 # -- win32 support --
 
