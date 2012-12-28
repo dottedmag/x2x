@@ -1,5 +1,0 @@
-Just build/install x2x as any other autotools-based program.
-
-Configuration options:
-
-  --with-win32 - enables win32 support
