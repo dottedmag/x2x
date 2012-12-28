@@ -3,17 +3,17 @@
 .SH NAME
 x2x \- X to X connection
 .SH SYNTAX
-\fB x2x\fR  <[-to <DISPLAY>] | [-fromwin | -from <DISPLAY>]> [options...]
+\fB x2x\fR  <[\-to <DISPLAY>] | [\-fromwin | \-from <DISPLAY>]> [options...]
 .SH DESCRIPTION
 x2x allows the keyboard and mouse on one ("from") X display to be used to
 control another ("to") X display.  Since x2x uses the XTEST extension,
 the "to" X display must support XTEST.
 
 If x2x is built under Cygwin (on Windows XP or Windows 2000) then the
--fromwin option may be specified to allow the "from" display to be the
+\-fromwin option may be specified to allow the "from" display to be the
 Windows desktop. (The Cygwin build also supports use of an X display
-for the "from" screen). Use of -fromwin sets the default behaviour as
-if the -big -west -capslockhack options had also been given.
+for the "from" screen). Use of \-fromwin sets the default behaviour as
+if the \-big \-west \-capslockhack options had also been given.
 
 In the default interface, x2x puts a window on the "from" display.
 This window is labeled with the name of the "to" display.  Keystrokes
@@ -23,19 +23,19 @@ the input focus.  Clicking on the x2x window causes the mouse on the
 a subsequent multiple button click on the "to" display returns control
 to the "from" display.
 
-If the -fromwin, -north, -south, -east or -west options are specified
+If the \-fromwin, \-north, \-south, \-east or \-west options are specified
 on the command line, x2x starts up with a different interface.  When
 the mouse moves to the top, bottom, east side or west side of the
 default screen on the "from" display, the cursor slides over to the
 "to" display.  When the mouse returns to to side of the "to" display
 that it entered, it slides back onto the "from" display.
 
-Unless the -nosel option is specified, x2x relays X selections from
-one display to the other. (If -fromwin is specified then the X
+Unless the \-nosel option is specified, x2x relays X selections from
+one display to the other. (If \-fromwin is specified then the X
 selection is relayed to and from the Windows clipboard as text strings).
 
 Here are a few hints for eXcursion users (based on Intel version
-2.1.309).  First, use the -big option.  Second, in the control panel,
+2.1.309).  First, use the \-big option.  Second, in the control panel,
 under mouse, check the box that enables "Automatically Capture Text on
 Button Up."  X selections will then automatically move into the
 Windows clipboard.  As is the case with all X applications running on
@@ -50,7 +50,7 @@ that X selections work better, as long as you are using x2x version
 1.25 or later.
 
 .SH OPTIONS
-Either the -to option or the -from option (or both) must be specified.
+Either the \-to option or the \-from option (or both) must be specified.
 .TP
 .B \-to \fIdisplay\fP
 .IP
@@ -69,7 +69,7 @@ indicates the ("from") display should be the Windows desktop. In this
 case the "to" display must be specified with the \-to option. Setting
 this option forces \-big and sets the default to \-west \-capslockhack
 
-The -fromwin option works best when Windows is configured for
+The \-fromwin option works best when Windows is configured for
 focus-follows-mouse also known as X Mouse. This can be set using
 TweakUI for Windows XP (on the Mouse/X-Mouse panel) or the XMouse2000
 program for Windows 2000. If Windows is set for its default behaviour
@@ -98,7 +98,7 @@ C:\\cygwin\\bin must be on the Windows PATH to allow other DLLs to be
 loaded. (If either of these are incorrect, launching the application
 tends to silently fail.)
 
-There are two magic key combinations activated by -fromwin:
+There are two magic key combinations activated by \-fromwin:
 
 RightAlt-Home: Forces the focus back to Windows without needing the
 mouse to be moved. Useful when some popup window on the Windows side
@@ -124,12 +124,12 @@ Slide off the west side of the "to" display onto the "from" display.
 .TP
 .B \-font \fIfontname\fP
 .IP
-The font used in the x2x window. (Overridden by -east or -west.)
+The font used in the x2x window. (Overridden by \-east or \-west.)
 .TP
 .B \-geometry \fIspecification\fP
 .IP
 The X geometry specification for the x2x window.
-(Overridden by -north, -south, -east or -west.)
+(Overridden by \-north, \-south, \-east or \-west.)
 .TP
 .B \-wait
 .IP
@@ -140,11 +140,11 @@ are ready.  Useful for login scripts.
 .IP
 Workaround for a bug in the cursor grab implementations of at least one
 X server.  Put a big window over the "to" display in order to force the
-X server to track the cursor. (This option is forced by the -fromwin option).
+X server to track the cursor. (This option is forced by the \-fromwin option).
 .TP
 .B \-buttonblock
 .IP
-If this option is enabled with -north, -south, -east or -west, the
+If this option is enabled with \-north, \-south, \-east or \-west, the
 cursor will not slide back onto the "from" display when one or more
 mouse buttons are pressed.
 .TP
@@ -158,7 +158,7 @@ OpenWindows display).
 .B \-nomouse
 .IP
 Don't capture the mouse.
-(Overridden by -north, -south, -east or -west.)
+(Overridden by \-north, \-south, \-east or \-west.)
 .TP
 .B \-nopointermap
 .IP
@@ -185,8 +185,8 @@ To disable this feature, use the \-noautoup command line option.
 .TP
 .B \-resurface
 .IP
-Ugly hack to work-around window manager ugliness.  The -north, -south,
--east and -west modes actually put a small window on the side of the
+Ugly hack to work-around window manager ugliness.  The \-north, \-south,
+\-east and \-west modes actually put a small window on the side of the
 "from" display.  This option causes this window to resurface itself if
 another window ever obscures it.  This option can cause really nasty
 behavior if another application tries to do the same thing.  Useful for
@@ -196,13 +196,13 @@ login scripts.
 .IP
 Ugly hack to work-around the situation in which the "to" Xserver doesn't
 seem to honor the state of the CapsLock on the "from" Xserver. This is
-the default when the -fromwin option is given (although the hack used
+the default when the \-fromwin option is given (although the hack used
 is slightly less ugly).
 .TP
 .B \-nocapslockhack
 .IP
-Disable the -capslockhack behaviour. Used to change the default
-behaviour after the -fromwin option is specified.
+Disable the \-capslockhack behaviour. Used to change the default
+behaviour after the \-fromwin option is specified.
 .TP
 .B \-clipcheck
 .IP
@@ -249,9 +249,9 @@ David Chaiken
 .br
 (chaiken@pa.dec.com)
 .br
-Mark Hayter (-fromwin code, thanks to the WinVNC sources)
+Mark Hayter (\-fromwin code, thanks to the WinVNC sources)
 .br
-Addition of -north and -south options by Charles Briscoe-Smith
+Addition of \-north and \-south options by Charles Briscoe-Smith
 <cpbs@debian.org>.
 .br
 Current maintaner is Mikhail Gusarov <dottedmag@dottedmag.net>
@@ -262,7 +262,7 @@ connection should go down.  Caveat hacker.  TANSTAAFL.
 Nevertheless, bugtracker is at
 http://x2x.dottedmag.net/trac/do/newticket
 
-When using the -fromwin option if the Ctrl-Alt-Del keysequence is used
+When using the \-fromwin option if the Ctrl-Alt-Del keysequence is used
 while the mouse is forwarded to the X display then the Ctrl and Alt
 key press events are reported to x2x and forwarded but no other key
 events are generated. Thus if the Ctrl-Alt-Del sequence is used to
