@@ -48,6 +48,10 @@ CLEANFILES = lawyerese.c
 
 # -- Various --
 
-EXTRA_DIST = ChangeLog.old COPYING.win32 keymap.h nocursor.cur resource.h x2x.1
+dist_doc_DATA = AUTHORS ChangeLog ChangeLog.old COPYING COPYING.win32	\
+    README docs/HostBasedAuthentication.txt				\
+    docs/MIT-MAGIC-COOKIE-1.txt docs/SshTunneling.txt			\
+    docs/X2xUsage.txt
 
 
+EXTRA_DIST = keymap.h nocursor.cur resource.h
