@@ -107,6 +107,8 @@
 
 #define DPMSModeOn        0
 extern Status DPMSForceLevel(Display *, unsigned short);
+/* We always support this: */
+#define DPMSQueryExtension(DPY, EVBASE, ERBASE) TRUE
 #else
 #include <X11/extensions/dpms.h>
 #endif
@@ -143,6 +145,7 @@ static Bool    CheckTestExtension();
 #ifndef WIN_2_X
 static int     ErrorHandler();
 #endif
+static void    DoDPMSForceLevel();
 static void    DoX2X();
 static void    InitDpyInfo();
 static void    DoConnect();
@@ -307,6 +310,7 @@ typedef struct _shadow {
   Display *dpy;
   long    led_mask;
   Bool    flush;
+  int     DPMSstatus; /* -1: not queried, 0: not supported, 1: supported */
 } SHADOW, *PSHADOW;
 
 /* sticky keys */
@@ -472,6 +476,7 @@ char **argv;
 
   /* toDpy is always the first shadow */
   pShadow = (PSHADOW)xmalloc(sizeof(SHADOW));
+  pShadow->DPMSstatus = -1;
   pShadow->name = toDpyName;
   /* link into the global list */
   pShadow->pNext = shadows;
@@ -714,6 +719,7 @@ char **argv;
     } else if (!strcasecmp(argv[arg], "-shadow")) {
       if (++arg >= argc) Usage();
       pShadow = (PSHADOW)xmalloc(sizeof(SHADOW));
+      pShadow->DPMSstatus = -1;
       pShadow->name = argv[arg];
 
       /* into the global list of shadows */
@@ -1541,6 +1547,27 @@ static int bad_window_handler(Display *disp, XErrorEvent *err)
   return 0;
 }
 
+static void DoDPMSForceLevel(pShadow, level)
+PSHADOW pShadow;
+CARD16 level;
+{
+  /* Do a DPMSForceLevel(), but only if the display supports it */
+  if (pShadow->DPMSstatus == -1) {
+    /* Need to see if this display supports the DPMS extension.
+     * If it doesn't then trying DPMSForceLevel() will display
+     * a spurious error message to stderr.
+     */
+    int t1, t2;
+    if (DPMSQueryExtension(pShadow->dpy, &t1, &t2))
+      pShadow->DPMSstatus = 1;
+    else
+      pShadow->DPMSstatus = 0;
+  }
+  
+  if (pShadow->DPMSstatus != 0)
+    DPMSForceLevel(pShadow->dpy, level);
+}
+
 static void DoConnect(pDpyInfo)
 PDPYINFO pDpyInfo;
 {
@@ -1552,7 +1579,7 @@ PDPYINFO pDpyInfo;
     return;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    DoDPMSForceLevel(pShadow, DPMSModeOn);
     XFlush(pShadow->dpy);
   }
 
@@ -1821,7 +1848,7 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
     if (doDpmsMouse)
     {
-      DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+      DoDPMSForceLevel(pShadow, DPMSModeOn);
     }
 
     XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
@@ -2582,7 +2609,7 @@ int x,y;
   PSHADOW   pShadow;
 
   for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
-    DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+    DoDPMSForceLevel(pShadow, DPMSModeOn);
     XFlush(pShadow->dpy);
   }
 
@@ -3113,7 +3140,7 @@ void WinPointerEvent(PDPYINFO pDpyInfo,
     for (pShadow = shadows; pShadow; pShadow = pShadow->pNext) {
       if (doDpmsMouse)
       {
-        DPMSForceLevel(pShadow->dpy, DPMSModeOn);
+        DoDPMSForceLevel(pShadow, DPMSModeOn);
       }
       XTestFakeMotionEvent(pShadow->dpy, toScreenNum, pDpyInfo->xTables[toScreenNum][x],
         pDpyInfo->yTables[toScreenNum][y], 0);
