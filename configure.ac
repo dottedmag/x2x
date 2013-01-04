@@ -6,7 +6,7 @@ dnl
 
 AC_PREREQ([2.69])
 AC_INIT([x2x],[1.30-rc1],[http://x2x.dottedmag.net/newticket],[x2x],[http://x2x.dottedmag.net])
-AM_INIT_AUTOMAKE([dist-bzip2])
+AM_INIT_AUTOMAKE([foreign dist-bzip2])
 AC_CONFIG_SRCDIR([x2x.c])
 
 # config.h is unused but generating it avoids compiler invocation clutter.
