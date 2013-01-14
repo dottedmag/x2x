@@ -1,7 +1,12 @@
-This Debian GNU/Linux prepackaged version of x2x was put together by me,
+This Debian GNU/Linux prepackaged version of x2x was put together by
 Charles Briscoe-Smith <cpbs@debian.org> using source code obtained from
 <URL:ftp://gatekeeper.dec.com/pub/DEC/SRC/x2x/x2x-1.27.tar.gz>.
-It is now maintained by Romain Francoise <rfrancoise@debian.org>.
+Maintain switched to Romain Francoise <rfrancoise@debian.org>,
+and then to "Barak A. Pearlmutter" <bap@debian.org>.
+
+Upstream was http://freshmeat.net/projects/x2x/ but there is a new
+upstream at git://github.com/dottedmag/x2x and forks thereof provide
+other tweaks, consolidated in fork git://github.com/barak/x2x
 
   AUTHORS
   -------
