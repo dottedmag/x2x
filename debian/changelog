@@ -1,0 +1,157 @@
+x2x (1.27.svn.20060501-4) unstable; urgency=low
+
+  * QA upload.
+  * Build-dependencies: changed xutils to xutils-dev (closes: #485530),
+    dropped x-dev.
+  * debian/control: Added Homepage (closes: #438944)
+
+ -- Ralf Treinen <treinen@debian.org>  Tue, 26 Aug 2008 20:07:36 +0200
+
+x2x (1.27.svn.20060501-3) unstable; urgency=low
+
+  * QA upload.
+  * Add md5sums to debian/rules.
+  * Bump Standards-Version to 3.7.2.
+  * Use [ ! -f Makefile ] || $(MAKE) clean.
+
+ -- Mohammed Adnène Trojette <adn+deb@diwi.org>  Sun, 19 Aug 2007 17:55:08 +0200
+
+x2x (1.27.svn.20060501-2) unstable; urgency=low
+
+  * debian/control: Set maintainer to Debian QA Group.
+
+ -- Romain Francoise <rfrancoise@debian.org>  Sat, 11 Aug 2007 12:54:09 +0200
+
+x2x (1.27.svn.20060501-1) unstable; urgency=low
+
+  * New upstream release:
+    + The maximum number of mouse buttons is now 20 (closes: #157082).
+    + The window title can now be set with the new -title option
+      (closes: #364202).
+
+  * debian/control: Bump Standards-Version to 3.7.0, no changes needed.
+  * debian/rules: Add empty binary-indep target.
+
+ -- Romain Francoise <rfrancoise@debian.org>  Mon,  1 May 2006 19:14:37 +0200
+
+x2x (1.27.svn.20060225-1) unstable; urgency=low
+
+  * New upstream, includes a patch from yours truly fixing the "less
+    becomes greater over x2x" bug introduced in version 1.30-beta
+    (closes: #354081).
+
+ -- Romain Francoise <rfrancoise@debian.org>  Sat, 25 Feb 2006 19:23:30 +0100
+
+x2x (1.27.svn.20060214-1) unstable; urgency=low
+
+  * New upstream (SVN checkout of the trunk), adds support for DPMS and
+    the new option -dpmsmouse (closes: #203021).
+
+  * New maintainer (closes: #352552).
+  * Acknowledge NMUs (closes: #95761, #346755).
+  * debian/control:
+    + Build-Depend on debhelper (>= 5.0.0).
+    + Update Standards-Version to 3.6.2.2, no changes needed.
+    + Update maintainer contact info.
+  * debian/compat: New file.
+  * debian/copyright: Update info.
+  * debian/rules:
+    + Don't use DH_COMPAT.
+    + Various cleanups.
+
+ -- Romain Francoise <rfrancoise@debian.org>  Tue, 14 Feb 2006 21:43:23 +0100
+
+x2x (1.27-8.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * High-urgency upload for RC bugfix
+  * Build-depend on libx11-dev, libxtst-dev, and x-dev instead of the
+    obsolete xlibs-dev; thanks to Justin Pryzby <justinpryzby@users.sf.net>
+    for testing.  Closes: #346755.
+
+ -- Steve Langasek <vorlon@debian.org>  Fri, 20 Jan 2006 10:43:33 -0800
+
+x2x (1.27-8) unstable; urgency=low
+
+  * Forgot to fix the maintainer in debian/control. Fixed now...
+    (Closes: #155262)
+
+ -- Randolph Chung <tausq@debian.org>  Sat, 24 Aug 2002 10:49:53 -0700
+
+x2x (1.27-7) unstable; urgency=low
+
+  * New Maintainer Upload (Closes: #142235) 
+  * Cleaned up some warnings in the build
+
+ -- Randolph Chung <tausq@debian.org>  Thu, 18 Apr 2002 22:18:32 -0700
+
+x2x (1.27-6) unstable; urgency=low
+
+  * Orphaned.  I haven't used x2x in years now.
+  * Symlink x2x.1 to x2x.man due to changed behaviour in X imake system.
+    (Closes: #142087).
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Wed, 10 Apr 2002 19:01:18 +0100
+
+x2x (1.27-5.1) unstable; urgency=low
+
+  * NMU
+  * use debhelper rather than cpbs - it's more standard and gives us FHS
+  * compile with "-g -O2" as per policy
+  * merge in patch from Tor Slettnes <tor@slett.net> to map buttons and not
+    send any which the remote end can't handle (closes: #80629, #56252)
+  * patches downloaded from http://www.eax.com/other/x2x-1.27-1.28.patch:
+    - unofficial x2x-1.28 patch from Adam Sulmcki <adam@cfar.umd.edu>
+      which adds an error handler (closes: #56252).  NB: I have only applied
+      the cleanup parts of the patch since #80629 fixes the problem better.
+      I've left the patch in debian/errorhandler.diff in case it's needed in
+      future.
+    - from Greg J. Badros <gjb@cs.washington.edu>:
+      -  fix for the feedback loop which can arise
+      -  save some screen estate
+  * patch from Ben Harris <bjh21@cam.ac.uk> to change title of window
+    (closes: #54045)
+
+ -- Adrian Bridgett <bridgett@debian.org>  Tue,  9 Jan 2001 18:48:27 +0000
+
+x2x (1.27-5) unstable; urgency=low
+
+  * Fix boundary adjustment for vertical mode (-north and -south).
+    This should make it possible to move the pointer back from the 'to'
+    screen to the 'from' screen in -north or -south mode.
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Sun,  4 Oct 1998 21:58:06 +0100
+
+x2x (1.27-4) unstable; urgency=low
+
+  * Added options -north and -south.
+  * Don't "Suggest: propsel" any more, just mention it in the extended
+    description.
+  * Updated standards-version to 2.4.1 (no changes necessary).
+  * Update debian/rules.
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Sat,  3 Oct 1998 18:11:28 +0100
+
+x2x (1.27-3) unstable; urgency=low
+
+  * Remove dpkg-geninfo from debian directory and remove call to it
+    from debian/rules following debian-policy discussion on `md5sums'
+    and `du' files.
+  * Install man page under /usr/X11R6 (as pointed out by lintian).
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Fri, 20 Feb 1998 02:46:29 +0000
+
+x2x (1.27-2) unstable; urgency=low
+
+  * Updated to standards-version 2.4.0.0.  No changes required.
+  * Explain "TANSTAAFL" in copyright file.
+  * New version of my generic debian/rules.  Include dpkg-geninfo.
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Sun,  1 Feb 1998 15:43:00 +0000
+
+x2x (1.27-1) unstable; urgency=low
+
+  * First Debian release.
+  * Corrected minor buglet in man page (change \f to \fB).
+
+ -- Charles Briscoe-Smith <cpbs@debian.org>  Wed,  3 Dec 1997 00:57:15 +0000

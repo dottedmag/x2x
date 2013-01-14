@@ -1,0 +1,30 @@
+Source: x2x
+Maintainer: Debian QA Group <packages@qa.debian.org>
+Build-Depends: debhelper (>= 5.0.0), libx11-dev, libxtst-dev, xutils-dev
+Section: x11
+Priority: optional
+Standards-Version: 3.7.2
+Homepage:  http://freshmeat.net/projects/x2x/
+
+Package: x2x
+Architecture: any
+Depends: ${shlibs:Depends}
+Section: x11
+Priority: optional
+Description: Link two X displays together, simulating a multiheaded display
+ x2x joins a pair of X displays together, as if they were a single
+ multiheaded display.  The pointer can be warped between displays,
+ or, depending on how you start x2x, can slide from one display to the
+ other when it runs off the edge of the screen.  Keyboard focus also
+ moves between displays in the way you'd expect, and the X selection
+ propagates around.  At least one of the displays involved (specifically,
+ the one being controlled remotely) must support the XTEST extension.
+ (The servers shipped by Debian support this.)
+ .
+ x2x is useful when you have two displays on the same desk, as you can use
+ a single keyboard and mouse to control both.  If you want to propagate
+ your selections between displays which are not sharing a desk, you might
+ be more interested in the package propsel.  Propsel does not link the
+ displays' keyboard and mouse, which would be confusing in some cases,
+ and can propagate between up to 8 displays, whereas x2x can handle only
+ two at a time.

@@ -1,0 +1,46 @@
+#!/usr/bin/make -f
+
+build:	build-stamp
+build-stamp:
+	dh_testdir
+	xmkmf -a
+	make CDEBUGFLAGS="-O2 -g"
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	[ ! -f Makefile ] || $(MAKE) clean
+	dh_clean
+	-rm -f Makefile Makefile.bak
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+binary-indep:
+	dh_testdir
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot 
+	dh_installdebconf
+	dh_installdirs usr/bin
+	dh_install x2x usr/bin
+	dh_installman x2x.man
+	dh_installdocs
+	dh_installchangelogs
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary:	binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary
