@@ -32,7 +32,7 @@ Current maintainer is Mikhail Gusarov.
 
 1. git clone
 2. ./bootstrap.sh
-3. sudo yum -y install libXext-devel libXtst-devel x11-devel
+3. sudo yum -y install libXext-devel libXtst-devel
 4. ./configure
 5.  make; make install
 
