@@ -40,7 +40,3 @@ Current maintainer is Mikhail Gusarov.
 3. sudo yum -y install libXext-devel libXtst-devel
 4. ./configure
 5.  make; make install
-
-== Help ==
-
-http://www.linuxjournal.com/content/share-keyboardmouse-between-multiple-computers-x2x
