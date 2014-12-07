@@ -32,3 +32,15 @@ Authors
 
 x2x was initially developed in DEC by David Chaiken.
 Current maintainer is Mikhail Gusarov.
+
+== Installing on Fedora  ==
+
+1. git clone
+2. ./bootstrap.sh
+3. sudo yum -y install libXext-devel libXtst-devel
+4. ./configure
+5.  make; make install
+
+== Help ==
+
+http://www.linuxjournal.com/content/share-keyboardmouse-between-multiple-computers-x2x
