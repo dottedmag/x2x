@@ -255,15 +255,15 @@ assume the local display on each system is :0.
 .TP
 run indirectly on secondary:
 .IP
-primary $ ssh -X secondary x2x -to :0 -east
+primary $ ssh \-X secondary x2x \-to :0 \-east
 .TP
 run indirectly on primary:
 .IP
-secondary $ ssh -X primary x2x -from :0 -west
+secondary $ ssh \-X primary x2x \-from :0 \-west
 .TP
 run directly indirectly on primary:
 .IP
-primary $ ssh -A secondary env DISPLAY=:0.0 ssh -X primary x2x -from :0 -east
+primary $ ssh \-A secondary env DISPLAY=:0.0 ssh \-X primary x2x \-from :0 \-east
 .SH SEE ALSO
 The synergy program <\fBhttp://synergy-project.org\fR> has similar goals.
 .br
