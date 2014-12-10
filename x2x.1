@@ -1,4 +1,9 @@
 .nh
+.de URL
+\\$2 \(laURL: \\$1 \(ra\\$3
+..
+.if \n[.g] .mso www.tmac
+\" .mso www.tmac
 .TH x2x 1
 .SH NAME
 x2x \- X to X connection
@@ -265,10 +270,13 @@ run directly indirectly on primary:
 .IP
 primary $ ssh \-A secondary env DISPLAY=:0.0 ssh \-X primary x2x \-from :0 \-east
 .SH SEE ALSO
-The synergy program <\fBhttp://synergy-project.org\fR> has similar goals.
-.br
-Linux Journal has a nice article on x2x,
-<\fBhttp://www.linuxjournal.com/content/share-keyboardmouse-between-multiple-computers-x2x\fR>.
+The
+.URL http://synergy-project.org "synergy program"
+has similar functionality to that of x2x, supports multiple platforms,
+and when I try to use it my X session crashes.
+
+There is a nice
+.URL http://www.linuxjournal.com/content/share-keyboardmouse-between-multiple-computers-x2x "Linux Journal article on x2x" .
 .SH AUTHOR
 David Chaiken <chaiken@pa.dec.com>
 .br
@@ -282,8 +290,9 @@ Current maintaner is Mikhail Gusarov <dottedmag@dottedmag.net>
 This software is experimental!  Heaven help you if your network
 connection should go down.  Caveat hacker.  TANSTAAFL.
 
-See <\fBhttp://github.com/dottedmag/x2x\fR> for source code repository
-and issue tracker.
+The
+.URL http://github.com/dottedmag/x2x "x2x repository and issue tracker"
+has moved to github.
 
 When using the \-fromwin option if the Ctrl-Alt-Del keysequence is used
 while the mouse is forwarded to the X display then the Ctrl and Alt
