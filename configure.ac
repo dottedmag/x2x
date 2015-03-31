@@ -15,13 +15,15 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CC
 AC_PROG_INSTALL
 
+AX_CFLAGS_WARN_ALL
+
 ## This PKG_CHECK_MODULES can be replaced by the following three
-## AC_CHECK_LIBs and the non-Cygwin setting of AM_LDFLAGS and
+## AC_SEARCH_LIBSs and the non-Cygwin setting of AM_LDFLAGS and
 ## AM_CFLAGS in Makefile.am removed.
 PKG_CHECK_MODULES(X11, xext xtst x11)
-# AC_CHECK_LIB([X11], [XOpenDisplay])
-# AC_CHECK_LIB([Xext], [XextFindDisplay])
-# AC_CHECK_LIB([Xtst], [XTestFakeKeyEvent])
+# AC_SEARCH_LIBS([XOpenDisplay], [X11 x11])
+# AC_SEARCH_LIBS([XextFindDisplay], [Xext xext])
+# AC_SEARCH_LIBS([XTestFakeKeyEvent], [Xtst xtst])
 
 AC_ARG_ENABLE([win32],
     AS_HELP_STRING(

@@ -4,7 +4,7 @@
 # BSD-3
 #
 
-AM_CFLAGS = $(X11_CFLAGS) -Wall
+AM_CFLAGS = $(X11_CFLAGS)
 LIBS = $(X11_LIBS)
 
 bin_PROGRAMS = x2x
