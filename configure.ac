@@ -32,7 +32,6 @@ AC_ARG_ENABLE([win32],
 
 AC_SUBST(X11_CFLAGS)
 AC_SUBST(X11_LIBS)
-AC_SUBST(enable_win32)
 
 AM_CONDITIONAL(WIN32, [test x$enable_win32 = xyes])
 
