@@ -25,13 +25,13 @@ PKG_CHECK_MODULES(X11, xext xtst x11)
 # AC_SEARCH_LIBS([XextFindDisplay], [Xext xext])
 # AC_SEARCH_LIBS([XTestFakeKeyEvent], [Xtst xtst])
 
+CFLAGS="${X11_CFLAGS} ${CFLAGS}"
+LIBS="${X11_LIBS} ${LIBS}"
+
 AC_ARG_ENABLE([win32],
     AS_HELP_STRING(
         [--enable-win32],
         [enable Win32 support (-fromwin option). Disabled by default]))
-
-AC_SUBST(X11_CFLAGS)
-AC_SUBST(X11_LIBS)
 
 AM_CONDITIONAL(WIN32, [test x$enable_win32 = xyes])
 
