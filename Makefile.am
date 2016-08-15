@@ -4,9 +4,6 @@
 # BSD-3
 #
 
-AM_CFLAGS = $(X11_CFLAGS) -Wall
-LIBS = $(X11_LIBS)
-
 bin_PROGRAMS = x2x
 
 x2x_SOURCES = x2x.c
@@ -18,7 +15,7 @@ dist_man1_MANS = x2x.1
 
 if WIN32
 
-AM_CFLAGS += -DWIN_2_X
+AM_CFLAGS = -DWIN_2_X
 LIBS += -luser32 -lgdi32 # Ugly hack
 x2x_SOURCES += keymap.c winmsg.c x2xwin.rc
 

@@ -1,4 +1,9 @@
 .nh
+.de URL
+\\$2 \(laURL: \\$1 \(ra\\$3
+..
+.if \n[.g] .mso www.tmac
+\" .mso www.tmac
 .TH x2x 1
 .SH NAME
 x2x \- X to X connection
@@ -244,10 +249,45 @@ Override the title of the control window (useful when running over ssh).
 .B \-copyright
 .IP
 Prints the full copyright for the x2x code.
+.TP
+.B \-noscale
+.IP
+This option turns off the mouse scaling.  In some circumstances, the
+remote screen is so different in physical size or resolution that the
+normal mouse scaling applied by x2x distorts the mouse movement so much
+as to be practially unusable.  Note: this is only useful if the remote
+screen is lower resolution than the local screen and also causes the
+remote mouse pointer to warp around when it hits the edges.
+.SH EXAMPLES
+Calling the system whose keyboard is to be used "primary" and the
+other system "secondary", you need to specify either \-from
+primary-x-display or \-to secondary-x-display.  The x2x program can be
+run on either system.  The easiest way to maintain security is to
+tunnel an X connection over ssh.  Since x2x can be run on either
+computer, it can be invoked in either of the following ways, where we
+assume the local display on each system is :0.
+.TP
+run indirectly on secondary:
+.IP
+primary $ ssh \-X secondary x2x \-to :0 \-east
+.TP
+run indirectly on primary:
+.IP
+secondary $ ssh \-X primary x2x \-from :0 \-west
+.TP
+run directly indirectly on primary:
+.IP
+primary $ ssh \-A secondary env DISPLAY=:0.0 ssh \-X primary x2x \-from :0 \-east
+.SH SEE ALSO
+The
+.URL http://synergy-project.org "synergy program"
+has similar functionality to that of x2x, supports multiple platforms,
+and when I try to use it my X session crashes.
+
+There is a nice
+.URL http://www.linuxjournal.com/content/share-keyboardmouse-between-multiple-computers-x2x "Linux Journal article on x2x" .
 .SH AUTHOR
-David Chaiken
-.br
-(chaiken@pa.dec.com)
+David Chaiken <chaiken@pa.dec.com>
 .br
 Mark Hayter (\-fromwin code, thanks to the WinVNC sources)
 .br
@@ -259,8 +299,9 @@ Current maintaner is Mikhail Gusarov <dottedmag@dottedmag.net>
 This software is experimental!  Heaven help you if your network
 connection should go down.  Caveat hacker.  TANSTAAFL.
 
-Nevertheless, bugtracker is at
-http://x2x.dottedmag.net/trac/do/newticket
+The
+.URL http://github.com/dottedmag/x2x "x2x repository and issue tracker"
+has moved to github.
 
 When using the \-fromwin option if the Ctrl-Alt-Del keysequence is used
 while the mouse is forwarded to the X display then the Ctrl and Alt
@@ -272,6 +313,9 @@ believe Ctrl and Alt are still pressed. Pressing and releasing Ctrl
 and Alt should restore correct operation, as should returning the
 mouse to the Windows display (or using the RightAlt-Home magic key
 sequence).
+
+If you have trouble with some keys not working, try setting the
+keymaps on both systems to be the same using \fBsetxkbmap\fR.
 
 .SH LAWYERESE
 Copyright (c) 1997

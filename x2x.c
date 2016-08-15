@@ -373,6 +373,7 @@ static Bool    doDpmsMouse  = False;
 static int     logicalOffset= 0;
 static int     nButtons     = 0;
 static KeySym  buttonmap[N_BUTTONS + 1][MAX_BUTTONMAPEVENTS + 1];
+static Bool    noScale      = False;
 
 #ifdef WIN_2_X
 /* These are used to allow pointer comparisons */
@@ -731,6 +732,8 @@ char **argv;
       triggerw = atoi(argv[arg]);
     } else if (!strcasecmp(argv[arg], "-copyright")) {
       puts(lawyerese);
+    } else if (!strcasecmp(argv[arg], "-noscale")) {
+      noScale = True;
     } else {
       Usage();
     } /* END if... */
@@ -1324,13 +1327,31 @@ PDPYINFO pDpyInfo;
     pDpyInfo->yTables[screenNum] = yTable =
       (short *)xmalloc(sizeof(short) * fromHeight);
 
-    /* vertical conversion table */
-    for (counter = 0; counter < fromHeight; ++counter)
-      yTable[counter] = (counter * toHeight) / fromHeight;
+    if (noScale) {
+        /* TODO:
+            - the fake tables should be built as "starting ignored", 1:1 map
+              region and "ending ignored".  Then the rest of the code would
+              need to be taught to disallow mouse movements in the two ignored
+              areas.  This would stop the mouse wrap-around that the simple
+              tables below result in.
+        */
 
-    /* horizontal conversion table entries */
-    for (counter = 0; counter < fromWidth; ++counter)
-      xTable[counter] = (counter * toWidth) / fromWidth;
+        /* fake vertical conversion table */
+        for (counter = 0; counter < fromHeight; ++counter)
+          yTable[counter] = counter % (toHeight - 1);
+
+        /* fake horizontal conversion table entries */
+        for (counter = 0; counter < fromWidth; ++counter)
+          xTable[counter] = counter % (toWidth - 1);
+    } else {
+        /* vertical conversion table */
+        for (counter = 0; counter < fromHeight; ++counter)
+          yTable[counter] = (counter * toHeight) / fromHeight;
+
+        /* horizontal conversion table entries */
+        for (counter = 0; counter < fromWidth; ++counter)
+          xTable[counter] = (counter * toWidth) / fromWidth;
+    }
 
     /* adjustment for boundaries */
     if (vertical) {
