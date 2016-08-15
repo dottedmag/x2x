@@ -5,7 +5,7 @@ Build-Depends: debhelper (>= 9), dh-autoreconf,
 	libx11-dev, libxtst-dev, xutils-dev
 Section: x11
 Priority: optional
-Standards-Version: 3.9.4
+Standards-Version: 3.9.8
 Homepage: http://github.com/dottedmag/x2x
 Vcs-Git: git://git.debian.org/git/collab-maint/x2x.git
 Vcs-Browser: http://git.debian.org/?p=collab-maint/x2x.git
