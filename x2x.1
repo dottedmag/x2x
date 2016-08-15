@@ -249,6 +249,15 @@ Override the title of the control window (useful when running over ssh).
 .B \-copyright
 .IP
 Prints the full copyright for the x2x code.
+.TP
+.B \-noscale
+.IP
+This option turns off the mouse scaling.  In some circumstances, the
+remote screen is so different in physical size or resolution that the
+normal mouse scaling applied by x2x distorts the mouse movement so much
+as to be practially unusable.  Note: this is only useful if the remote
+screen is lower resolution than the local screen and also causes the
+remote mouse pointer to warp around when it hits the edges.
 .SH EXAMPLES
 Calling the system whose keyboard is to be used "primary" and the
 other system "secondary", you need to specify either \-from
