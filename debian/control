@@ -6,9 +6,9 @@ Build-Depends: debhelper (>= 9), dh-autoreconf,
 Section: x11
 Priority: optional
 Standards-Version: 3.9.8
-Homepage: http://github.com/dottedmag/x2x
-Vcs-Git: git://git.debian.org/git/collab-maint/x2x.git
-Vcs-Browser: http://git.debian.org/?p=collab-maint/x2x.git
+Homepage: https://github.com/dottedmag/x2x
+Vcs-Git: https://anonscm.debian.org/git/collab-maint/x2x.git
+Vcs-Browser: https://anonscm.debian.org/git/collab-maint/x2x.git
 
 Package: x2x
 Architecture: any
