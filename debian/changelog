@@ -1,3 +1,12 @@
+x2x (1.30-3) unstable; urgency=medium
+
+  * Merge upstream patches
+  * Bump standards version (no changes required)
+  * Secure some URLs
+  * Harden
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Mon, 15 Aug 2016 16:53:31 +0200
+
 x2x (1.30-2) unstable; urgency=low
 
   * Merge ubuntu patch, included upstream (closes: #699617)
