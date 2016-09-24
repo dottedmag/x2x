@@ -258,6 +258,27 @@ normal mouse scaling applied by x2x distorts the mouse movement so much
 as to be practially unusable.  Note: this is only useful if the remote
 screen is lower resolution than the local screen and also causes the
 remote mouse pointer to warp around when it hits the edges.
+.TP
+.B \-completeregionleft
+.IP
+Describes leftmost coordinate of complete rectangle region in from-display.  If
+from-display is configured with multiple monitors and they have different
+resolution, few regions that does not belongs to any monitor becomes dead space
+that mouse cannot move in.  In the case, the dead space can be mapped to legal
+region of to-display.  If complete region in from-display is specified, X2X
+maps only complete region to to-display and avoid the dead, but legal regions.
+.TP
+.B \-completeregionright
+.IP
+Describes rightmost coordinate of complete rectangle region in from-display.
+.TP
+.B \-completeregionup
+.IP
+Describes uppermost coordinate of complete rectangle region in from-display.
+.TP
+.B \-completeregionlow
+.IP
+Describes lowermost coordinate of complete rectangle region in from-display.
 .SH EXAMPLES
 Calling the system whose keyboard is to be used "primary" and the
 other system "secondary", you need to specify either \-from

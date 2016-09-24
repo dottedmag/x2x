@@ -374,6 +374,10 @@ static int     logicalOffset= 0;
 static int     nButtons     = 0;
 static KeySym  buttonmap[N_BUTTONS + 1][MAX_BUTTONMAPEVENTS + 1];
 static Bool    noScale      = False;
+static int     compRegLeft  = 0;
+static int     compRegRight = 0;
+static int     compRegUp    = 0;
+static int     compRegLow   = 0;
 
 #ifdef WIN_2_X
 /* These are used to allow pointer comparisons */
@@ -382,6 +386,14 @@ static int dummy;
 static Display *fromWin = (Display *)&dummy;
 static HWND hWndSave;
 static HINSTANCE m_instance;
+#endif
+
+#ifdef DEBUG_COMPLREG
+#define debug_cmpreg printf
+#else
+void debug_cmpreg(const char *fmt, ...)
+{
+}
 #endif
 
 #ifdef DEBUG
@@ -734,6 +746,18 @@ char **argv;
       puts(lawyerese);
     } else if (!strcasecmp(argv[arg], "-noscale")) {
       noScale = True;
+    } else if (!strcasecmp(argv[arg], "-completeregionleft")) {
+      if (++arg >= argc) Usage();
+      compRegLeft = atoi(argv[arg]);
+    } else if (!strcasecmp(argv[arg], "-completeregionright")) {
+      if (++arg >= argc) Usage();
+      compRegRight = atoi(argv[arg]);
+    } else if (!strcasecmp(argv[arg], "-completeregionup")) {
+      if (++arg >= argc) Usage();
+      compRegUp = atoi(argv[arg]);
+    } else if (!strcasecmp(argv[arg], "-completeregionlow")) {
+      if (++arg >= argc) Usage();
+      compRegLow = atoi(argv[arg]);
     } else {
       Usage();
     } /* END if... */
@@ -1327,6 +1351,12 @@ PDPYINFO pDpyInfo;
     pDpyInfo->yTables[screenNum] = yTable =
       (short *)xmalloc(sizeof(short) * fromHeight);
 
+    debug_cmpreg("fromWidth/Height: %d/%d, toWidth/Height: %d/%d\n",
+		    fromWidth, fromHeight, toWidth, toHeight);
+    if (compRegRight == 0)
+	    compRegRight = fromWidth;
+    if (compRegLow == 0)
+	    compRegLow = fromHeight;
     if (noScale) {
         /* TODO:
             - the fake tables should be built as "starting ignored", 1:1 map
@@ -1346,11 +1376,16 @@ PDPYINFO pDpyInfo;
     } else {
         /* vertical conversion table */
         for (counter = 0; counter < fromHeight; ++counter)
-          yTable[counter] = (counter * toHeight) / fromHeight;
+          yTable[counter] = (counter < compRegUp || counter > compRegLow) ?
+                   100 :
+                   (counter - compRegUp) * toHeight / (compRegLow - compRegUp);
 
-        /* horizontal conversion table entries */
+        /* vertical conversion table */
         for (counter = 0; counter < fromWidth; ++counter)
-          xTable[counter] = (counter * toWidth) / fromWidth;
+          xTable[counter] = (counter < compRegLeft || counter > compRegRight) ?
+                   100 :
+                   (counter - compRegLeft) * toWidth /
+                   (compRegRight - compRegLeft);
     }
 
     /* adjustment for boundaries */
@@ -1872,6 +1907,17 @@ XMotionEvent *pEv; /* caution: might be pseudo-event!!! */
       DoDPMSForceLevel(pShadow, DPMSModeOn);
     }
 
+#ifdef DEBUG_COMPLREG
+    static unsigned lc;
+
+    if (lc++ % 10 == 0)
+      debug_cmpreg("sj: Call XTestFakeMotionEvent %d/%d to %d/%d\n",
+                      pEv->x_root,
+                      pEv->y_root,
+                      pDpyInfo->xTables[toScreenNum][pEv->x_root],
+                      pDpyInfo->yTables[toScreenNum][pEv->y_root]);
+#endif
+
     XTestFakeMotionEvent(pShadow->dpy, toScreenNum,
                       vert?pDpyInfo->xTables[toScreenNum][pEv->x_root]:toCoord,
                       vert?toCoord:pDpyInfo->yTables[toScreenNum][pEv->y_root],
@@ -1913,6 +1959,15 @@ XCrossingEvent *pEv;
 {
   Display *fromDpy = pDpyInfo->fromDpy;
   XMotionEvent xmev;
+
+  if (pEv->x_root < compRegLeft)
+	  pEv->x_root = compRegLeft;
+  if (pEv->x_root > compRegRight)
+	  pEv->x_root = compRegRight;
+  if (pEv->y_root < compRegUp)
+	  pEv->y_root = compRegUp;
+  if (pEv->y_root > compRegLow)
+	  pEv->y_root = compRegLow;
 
   if ((pEv->mode == NotifyNormal) &&
       (pDpyInfo->mode == X2X_DISCONNECTED) && (dpy == pDpyInfo->fromDpy)) {
