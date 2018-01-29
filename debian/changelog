@@ -117,7 +117,7 @@ x2x (1.27-8) unstable; urgency=low
 
 x2x (1.27-7) unstable; urgency=low
 
-  * New Maintainer Upload (Closes: #142235) 
+  * New Maintainer Upload (Closes: #142235)
   * Cleaned up some warnings in the build
 
  -- Randolph Chung <tausq@debian.org>  Thu, 18 Apr 2002 22:18:32 -0700
