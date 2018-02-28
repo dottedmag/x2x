@@ -235,6 +235,7 @@ typedef struct {
   int     selRevFrom;
   GC      textGC;
   Atom    wmpAtom, wmdwAtom;
+  Atom    netWmWindowTypeAtom, netWmWindowTypeDockAtom;
   Cursor  grabCursor;
   Font    fid;
   int     width, height, twidth, theight, tascent;
@@ -1208,6 +1209,13 @@ PDPYINFO pDpyInfo;
                     vertical ? triggerw : fromHeight - (2*triggerw),
                     0, 0, InputOnly, 0,
                     CWOverrideRedirect, &xswa);
+
+    pDpyInfo->netWmWindowTypeAtom = XInternAtom(fromDpy, "_NET_WM_WINDOW_TYPE", True);
+    pDpyInfo->netWmWindowTypeDockAtom = XInternAtom(fromDpy, "_NET_WM_WINDOW_TYPE_DOCK", True);
+    XChangeProperty(fromDpy, trigger, pDpyInfo->netWmWindowTypeAtom,
+                    XA_ATOM, 32, PropModeReplace,
+                    (unsigned char *)&pDpyInfo->netWmWindowTypeDockAtom, 1);
+
 #ifdef WIN_2_X
     }
 #endif
