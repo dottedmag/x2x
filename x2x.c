@@ -2543,12 +2543,12 @@ PDPYINFO pDpyInfo;
           if ((keycode = XKeysymToKeycode(pShadow->dpy, pFake->thing))) {
             XTestFakeKeyEvent(pShadow->dpy, keycode, False, 0);
 	    pShadow->flush = True;
-            debug("key 0x%x up\n", pFake->thing);
+            debug("key 0x%lx up\n", (unsigned long)pFake->thing);
           } /* END if */
         } else { /* button goes up */
           XTestFakeButtonEvent(pShadow->dpy, pFake->thing, False, 0);
 	  pShadow->flush = True;
-          debug("button %d up\n", pFake->thing);
+          debug("button %ld up\n", (long)pFake->thing);
         } /* END if/else */
       } /* END for */
 
