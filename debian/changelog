@@ -1,3 +1,11 @@
+x2x (1.30-5) unstable; urgency=medium
+
+  * Merge upstream mods:
+    - Tell the window manager we are a dock
+    - printf format pointer vs int size issue
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Thu, 01 Mar 2018 13:31:03 +0000
+
 x2x (1.30-4) unstable; urgency=medium
 
   * Merge upstream fix (explicit region option) for dead region issue
