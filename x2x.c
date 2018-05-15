@@ -236,6 +236,7 @@ typedef struct {
   GC      textGC;
   Atom    wmpAtom, wmdwAtom;
   Atom    netWmWindowTypeAtom, netWmWindowTypeDockAtom;
+  Atom    netWmStrutAtom;
   Cursor  grabCursor;
   Font    fid;
   int     width, height, twidth, theight, tascent;
@@ -379,6 +380,7 @@ static int     compRegLeft  = 0;
 static int     compRegRight = 0;
 static int     compRegUp    = 0;
 static int     compRegLow   = 0;
+static Bool    useStruts    = False;
 
 #ifdef WIN_2_X
 /* These are used to allow pointer comparisons */
@@ -759,6 +761,11 @@ char **argv;
     } else if (!strcasecmp(argv[arg], "-completeregionlow")) {
       if (++arg >= argc) Usage();
       compRegLow = atoi(argv[arg]);
+
+    } else if (!strcasecmp(argv[arg], "-struts")) {
+      useStruts = True;
+
+      debug("will advertise struts in _NET_WM_STRUT\n");
     } else {
       Usage();
     } /* END if... */
@@ -796,6 +803,7 @@ static void Usage()
   printf("       -label <LABEL>\n");
   printf("       -title <TITLE>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
+  printf("       -struts\n");
 #ifdef WIN_2_X
   printf("       -offset [-]<pixel offset of \"to\">\n");
   printf("WIN_2_X build allows Windows or X as -from display\n");
@@ -1215,6 +1223,18 @@ PDPYINFO pDpyInfo;
     XChangeProperty(fromDpy, trigger, pDpyInfo->netWmWindowTypeAtom,
                     XA_ATOM, 32, PropModeReplace,
                     (unsigned char *)&pDpyInfo->netWmWindowTypeDockAtom, 1);
+
+    if (useStruts) {
+      unsigned long struts[4] = { doEdge == EDGE_WEST ? triggerw : 0
+                                , doEdge == EDGE_EAST ? triggerw : 0
+                                , doEdge == EDGE_NORTH ? triggerw : 0
+                                , doEdge == EDGE_SOUTH ? triggerw : 0
+                                };
+      pDpyInfo->netWmStrutAtom = XInternAtom(fromDpy, "_NET_WM_STRUT", True);
+      XChangeProperty(fromDpy, trigger, pDpyInfo->netWmStrutAtom,
+                      XA_CARDINAL, 32, PropModeReplace,
+                      (unsigned char *)&struts, 4);
+    }
 
 #ifdef WIN_2_X
     }
