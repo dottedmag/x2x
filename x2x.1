@@ -197,6 +197,25 @@ another window ever obscures it.  This option can cause really nasty
 behavior if another application tries to do the same thing.  Useful for
 login scripts.
 .TP
+.B \-struts
+.IP
+Advertise struts in _NET_WM_STRUT
+    
+Once upon a time, the trigger window was a regular window and could be
+arbitrarily stacked. If obscured it would stop working. Later the
+trigger window became a dock, to be treated specially by the window
+manager. The EWMH spec
+.B suggests
+placing docks over all other
+windows... but some window managers place docks below before unmapping
+them. XMonad is one such window manager. In this case we would like to
+advertise struts - reserved space along screen edges that is not
+normally obscured. However this should not happen if the dock is already
+above all windows. And thus the new '\-struts' settings is born, which
+uses the '_NET_WM_STRUT' property.
+    
+Note that this is a less hacky alternative to '\-resurface'.
+.TP
 .B \-capslockhack
 .IP
 Ugly hack to work-around the situation in which the "to" Xserver doesn't
