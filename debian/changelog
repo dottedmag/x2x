@@ -1,3 +1,10 @@
+x2x (1.30-6) unstable; urgency=medium
+
+  * Swizzle packaging repo to salsa
+  * Merge upstream x2x -struts option
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Thu, 17 May 2018 20:57:17 +0100
+
 x2x (1.30-5) unstable; urgency=medium
 
   * Merge upstream mods:
