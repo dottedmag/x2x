@@ -40,3 +40,10 @@ Current maintainer is Mikhail Gusarov.
 3. sudo yum -y install libXext-devel libXtst-devel
 4. ./configure
 5.  make; make install
+
+== Installing on Ubuntu ==
+1. git clone
+2. sudo apt-get install dh-autoreconf
+3. sudo apt-get install libx11-dev libxext-dev libxtst-dev
+4. ./configure
+5. make; make install
