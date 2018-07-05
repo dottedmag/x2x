@@ -364,6 +364,8 @@ static int     doEdge       = EDGE_NONE;
 static Bool    doSel        = True;
 static Bool    doAutoUp     = True;
 static Bool    doResurface  = False;
+static Bool    winTransparent = False;
+static Bool    doInputOnly  = True;
 static PSHADOW shadows      = NULL;
 static int     triggerw     = 2;
 static Bool    doPointerMap = True;
@@ -732,6 +734,12 @@ char **argv;
       doResurface = True;
 
       debug("will resurface the trigger window when obscured\n");
+    } else if (!strcasecmp(argv[arg], "-win-output")) {
+      doInputOnly = False;
+      debug("trigger window will be an InputOutput window\n");
+    } else if (!strcasecmp(argv[arg], "-win-transparent")) {
+      winTransparent = True;
+      debug("trigger window will be transparent\n");
     } else if (!strcasecmp(argv[arg], "-shadow")) {
       if (++arg >= argc) Usage();
       pShadow = (PSHADOW)xmalloc(sizeof(SHADOW));
@@ -795,6 +803,8 @@ static void Usage()
   printf("       -nosel\n");
   printf("       -noautoup\n");
   printf("       -resurface\n");
+  printf("       -win-output\n");
+  printf("       -win-transparent\n");
   printf("       -capslockhack\n");
   printf("       -nocapslockhack\n");
   printf("       -clipcheck\n");
@@ -1209,13 +1219,15 @@ PDPYINFO pDpyInfo;
         --09/27/99 Greg J. Badros <gjb@cs.washington.edu> */
     /* also, make it an InputOnly window so I don't lose
        screen real estate --09/29/99 gjb */
+    /* make it InputOutput when argument -win-output presents,
+       so to get window visibility change event and make -resurface work */
     trigger = pDpyInfo->trigger =
       XCreateWindow(fromDpy, root,
                     vertical ? triggerw : triggerLoc,
                     vertical ? triggerLoc : triggerw,
                     vertical ? fromWidth - (2*triggerw) : triggerw,
                     vertical ? triggerw : fromHeight - (2*triggerw),
-                    0, 0, InputOnly, 0,
+                    0, 0, doInputOnly?InputOnly:InputOutput, 0,
                     CWOverrideRedirect, &xswa);
 
     pDpyInfo->netWmWindowTypeAtom = XInternAtom(fromDpy, "_NET_WM_WINDOW_TYPE", True);
@@ -1328,6 +1340,14 @@ PDPYINFO pDpyInfo;
   pDpyInfo->wmpAtom = XInternAtom(fromDpy, "WM_PROTOCOLS", True);
   pDpyInfo->wmdwAtom = XInternAtom(fromDpy, "WM_DELETE_WINDOW", True);
   XSetWMProtocols(fromDpy, trigger, &(pDpyInfo->wmdwAtom), 1);
+
+  /* making the trigger window transparent */
+  if (winTransparent) {
+    u_int32_t cardinal_alpha = (u_int32_t) (0);
+    XChangeProperty(fromDpy, trigger,
+      XInternAtom(fromDpy, "_NET_WM_WINDOW_OPACITY", 0),
+      XA_CARDINAL, 32, PropModeReplace, (u_int8_t*) &cardinal_alpha,1);
+  };
 
   /* mdh - Put in Chaiken's change to make this InputOnly */
   if (doBig) {

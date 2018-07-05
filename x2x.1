@@ -197,6 +197,17 @@ another window ever obscures it.  This option can cause really nasty
 behavior if another application tries to do the same thing.  Useful for
 login scripts.
 .TP
+.B \-win-output
+.IP
+Makes the small window ("trigger window") on the side of the "from" display
+an InputOutput window instead of an InputOnly window. Visibility notification
+events are never generated for InputOnly window, therefore -resurface would
+not work for InputOnly window. Use -win-output together with -resurface.
+.TP
+.B \-win-transparent
+.IP
+Makes the small window ("trigger window") transparent. Use with -win-output option.
+.TP
 .B \-struts
 .IP
 Advertise struts in _NET_WM_STRUT
