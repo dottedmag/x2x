@@ -1,3 +1,9 @@
+x2x (1.30-7) unstable; urgency=medium
+
+  * merge mods adding options -win-output and -win-transparent
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Mon, 09 Jul 2018 13:32:18 +0100
+
 x2x (1.30-6) unstable; urgency=medium
 
   * Swizzle packaging repo to salsa
