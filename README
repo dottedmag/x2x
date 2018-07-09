@@ -33,17 +33,18 @@ Authors
 x2x was initially developed in DEC by David Chaiken.
 Current maintainer is Mikhail Gusarov.
 
-== Installing on Fedora  ==
+== Installing on Fedora, or without building package  ==
 
-1. git clone
+1. git clone https://github.com/dottedmag/x2x; cd x2x
 2. ./bootstrap.sh
 3. sudo yum -y install libXext-devel libXtst-devel
 4. ./configure
-5.  make; make install
+5. make && sudo make install
 
-== Installing on Ubuntu ==
-1. git clone
-2. sudo apt-get install dh-autoreconf
-3. sudo apt-get install libx11-dev libxext-dev libxtst-dev
-4. ./configure
-5. make; make install
+== Installing on Ubuntu or Debian ==
+
+1. git clone https://github.com/dottedmag/x2x; cd x2x
+2. git checkout debian
+3. dpkg-checkbuilddeps (and sudo apt install anything-missing)
+4. fakeroot debian/rules binary
+5. sudo dpkg --install ../x2x_VERSION.deb
