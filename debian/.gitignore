@@ -1,6 +1,8 @@
 /*.debhelper.log
 /*.substvars
+/.debhelper/
 /autoreconf.after
 /autoreconf.before
+/debhelper-build-stamp
 /files
 /x2x/
