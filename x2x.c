@@ -1068,6 +1068,11 @@ PDPYINFO pDpyInfo;
                                       || doEdge == EDGE_SOUTH);
 #endif
 
+  if (compRegRight == 0)
+   compRegRight = fromWidth;
+  if (compRegLow == 0)
+    compRegLow = fromHeight;
+
 #ifdef WIN_2_X
   if (fromDpy != fromWin) {
 #endif
@@ -1110,19 +1115,19 @@ PDPYINFO pDpyInfo;
     /* trigger window location */
     if (doEdge == EDGE_NORTH) {
       triggerLoc = 0;
-      pDpyInfo->fromConnCoord = fromHeight - triggerw - 1;
+      pDpyInfo->fromConnCoord = compRegLow - triggerw - 1;
       pDpyInfo->fromDiscCoord = triggerw;
     } else if (doEdge == EDGE_SOUTH) {
       triggerLoc = fromHeight - triggerw;
-      pDpyInfo->fromConnCoord = 1;
+      pDpyInfo->fromConnCoord = compRegUp + 1;
       pDpyInfo->fromDiscCoord = triggerLoc - 1;
     } else if (doEdge == EDGE_EAST) {
       triggerLoc = fromWidth - triggerw;
-      pDpyInfo->fromConnCoord = 1;
+      pDpyInfo->fromConnCoord = compRegLeft + 1;
       pDpyInfo->fromDiscCoord = triggerLoc - 1;
     } else /* doEdge == EDGE_WEST */ {
       triggerLoc = 0;
-      pDpyInfo->fromConnCoord = fromWidth - triggerw - 1;
+      pDpyInfo->fromConnCoord = compRegRight - triggerw - 1;
       pDpyInfo->fromDiscCoord = triggerw;
     } /* END if doEdge == ... */
 
@@ -1401,10 +1406,6 @@ PDPYINFO pDpyInfo;
 
     debug_cmpreg("fromWidth/Height: %d/%d, toWidth/Height: %d/%d\n",
 		    fromWidth, fromHeight, toWidth, toHeight);
-    if (compRegRight == 0)
-	    compRegRight = fromWidth;
-    if (compRegLow == 0)
-	    compRegLow = fromHeight;
     if (noScale) {
         /* TODO:
             - the fake tables should be built as "starting ignored", 1:1 map
@@ -1438,23 +1439,27 @@ PDPYINFO pDpyInfo;
 
     /* adjustment for boundaries */
     if (vertical) {
-      if ((screenNum != 0) || (doEdge == EDGE_SOUTH))
-        yTable[0] = COORD_DECR;
+      if ((screenNum != 0) || (doEdge == EDGE_SOUTH)) {
+        for (counter = 0; counter <= compRegUp; ++counter)
+          yTable[counter] = COORD_DECR;
+      }
       if (((screenNum + 1) < nScreens) || (doEdge == EDGE_NORTH)) {
-        yTable[fromHeight - 1] = COORD_INCR;
         /* work-around for bug: on at least one tested screen, cursor
            never moved past fromWidth - 2  (I'll assume this might apply
            in the vertical case, too. --cpbs) */
-        yTable[fromHeight - 2] = COORD_INCR;
+        for (counter = compRegLow - 2; counter < fromHeight; ++counter)
+          yTable[counter] = COORD_INCR;
       }
     } else {
-      if ((screenNum != 0) || (doEdge == EDGE_EAST))
-        xTable[0] = COORD_DECR;
+      if ((screenNum != 0) || (doEdge == EDGE_EAST)) {
+        for (counter = 0; counter <= compRegLeft; ++counter)
+          xTable[counter] = COORD_DECR;
+      }
       if (((screenNum + 1) < nScreens) || (doEdge == EDGE_WEST)) {
-        xTable[fromWidth - 1] = COORD_INCR;
         /* work-around for bug: on at least one tested screen, cursor
            never moved past fromWidth - 2 */
-        xTable[fromWidth - 2] = COORD_INCR;
+        for (counter = compRegRight - 2; counter < fromWidth; ++counter)
+          xTable[counter] = COORD_INCR;
       }
     }
 
