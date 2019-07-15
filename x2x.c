@@ -1425,16 +1425,17 @@ PDPYINFO pDpyInfo;
     } else {
         /* vertical conversion table */
         for (counter = 0; counter < fromHeight; ++counter)
-          yTable[counter] = (counter < compRegUp || counter > compRegLow) ?
-                   100 :
-                   (counter - compRegUp) * toHeight / (compRegLow - compRegUp);
+          yTable[counter] =
+            (counter < compRegUp) ? 0 :
+            (counter > compRegLow) ? toHeight - 1 :
+            (counter - compRegUp) * toHeight / (compRegLow - compRegUp);
 
         /* vertical conversion table */
         for (counter = 0; counter < fromWidth; ++counter)
-          xTable[counter] = (counter < compRegLeft || counter > compRegRight) ?
-                   100 :
-                   (counter - compRegLeft) * toWidth /
-                   (compRegRight - compRegLeft);
+          xTable[counter] =
+            (counter < compRegLeft) ? 0 :
+            (counter > compRegRight) ? toWidth - 1 :
+            (counter - compRegLeft) * toWidth / (compRegRight - compRegLeft);
     }
 
     /* adjustment for boundaries */
