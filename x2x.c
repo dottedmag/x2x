@@ -813,6 +813,10 @@ static void Usage()
   printf("       -label <LABEL>\n");
   printf("       -title <TITLE>\n");
   printf("       -buttonmap <button#> \"<keysym> ...\"\n");
+  printf("       -completeregionleft <COORDINATE>\n");
+  printf("       -completeregionright <COORDINATE>\n");
+  printf("       -completeregionup <COORDINATE>\n");
+  printf("       -completeregionlow <COORDINATE>\n");
   printf("       -struts\n");
 #ifdef WIN_2_X
   printf("       -offset [-]<pixel offset of \"to\">\n");
