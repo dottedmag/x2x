@@ -809,10 +809,10 @@ static void Usage()
   printf("       -nocapslockhack\n");
   printf("       -clipcheck\n");
   printf("       -shadow <DISPLAY>\n");
-  printf("       -sticky <sticky key>\n");
+  printf("       -sticky <STICKY KEY>\n");
   printf("       -label <LABEL>\n");
   printf("       -title <TITLE>\n");
-  printf("       -buttonmap <button#> \"<keysym> ...\"\n");
+  printf("       -buttonmap <BUTTON#> \"<KEYSYM> ...\"\n");
   printf("       -completeregionleft <COORDINATE>\n");
   printf("       -completeregionright <COORDINATE>\n");
   printf("       -completeregionup <COORDINATE>\n");
