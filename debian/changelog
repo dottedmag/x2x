@@ -1,3 +1,11 @@
+x2x (1.30-8) unstable; urgency=medium
+
+  * merge upstream mods
+  * bump to debhelper 12
+  * bump policy
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Wed, 02 Oct 2019 21:16:20 +0100
+
 x2x (1.30-7) unstable; urgency=medium
 
   * merge mods adding options -win-output and -win-transparent
