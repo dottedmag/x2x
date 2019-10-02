@@ -329,6 +329,29 @@ secondary $ ssh \-X primary x2x \-from :0 \-west
 run directly indirectly on primary:
 .IP
 primary $ ssh \-A secondary env DISPLAY=:0.0 ssh \-X primary x2x \-from :0 \-east
+
+.RE
+If your primary display is configured with several monitors having different
+resolutions, \-completeregion(left|up|right|low) options can be helpful.
+suppose that you have two monitors connected to the primary system and the
+resolution of the left-side monitor is 300x300 while the right-side one is
+400x400.  Also, you aligned these two monitors to be vertically centric.
+Therefore, your primary system has virtually 700x400 resolution.
+
+The left monitor covers (0,50,300,350) of the virtual total resolution while
+the right monitor covers (300,0,700,400). The four numbers each represent left,
+top, right, and bottom. Also, you have two dead spaces: (0,0,300,50) and
+(0,350,300,400). Thus, the complete square region for this configuration would
+be (0,50,700,350).
+
+If no explicit description is provided, the x2x recognizes the virtual total
+resolution (0,0,700,400) only. As a consequence, the dead space region cannot
+be reached in the secondary system.  You can solve this problem by teaching x2x
+that the real complete square region for the secondary system (0,50,700,350)
+using the \-comptereregion(left|up|right|low) options as below:
+.IP
+\-completeregionleft 0 \-completeregionup 50 -completeregionright 700 -completeregionlow 350
+
 .SH SEE ALSO
 The
 .URL http://synergy-project.org "synergy program"
