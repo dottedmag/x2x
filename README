@@ -1,6 +1,14 @@
 x2x
 ===
 
+Project status
+--------------
+
+Dormant. This project needs a new maintainer.
+
+x2x has a long history. It was born in the times when life was hard, window
+managers were simple and displays were rectangular. Now it needs an overhaul.
+
 Overview
 --------
 
@@ -14,18 +22,7 @@ License
 
 x2x is under MIT/BSD license.
 
-Windows support includes code under GPL2 or later.
-
-Call for help
--------------
-
-x2x has a long history. It was born in the times when life was hard, window
-managers were simple and displays were rectangle. Several implicit assumptions
-survived during the x2x lifetime, and now need reconsideration. As x2x is simple
-(however, it has accumulated inner knowledge of X11 implementations), we are
-looking for brave person who can read and understand whole x2x and will write
-new x2x, adapted to the modern life of dynamically attached and detached
-displays, complex data transferring through the X selections and Xinerama.
+Windows support includes code under GPLv2+.
 
 Authors
 -------
@@ -33,7 +30,7 @@ Authors
 x2x was initially developed in DEC by David Chaiken.
 Current maintainer is Mikhail Gusarov.
 
-== Installing on Fedora, or without building package  ==
+== Building on Fedora ==
 
 1. git clone https://github.com/dottedmag/x2x; cd x2x
 2. ./bootstrap.sh
@@ -41,7 +38,7 @@ Current maintainer is Mikhail Gusarov.
 4. ./configure
 5. make && sudo make install
 
-== Installing on Ubuntu or Debian ==
+== Building on Ubuntu or Debian ==
 
 1. git clone https://github.com/dottedmag/x2x; cd x2x
 2. git checkout debian
