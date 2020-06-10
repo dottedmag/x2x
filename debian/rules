@@ -5,8 +5,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 %:
 	dh $@
 
-override_dh_auto_install:
-	dh_auto_install
+execute_after_dh_auto_install:
 	-rm -f --verbose \
 	 debian/x2x/usr/share/doc/x2x/COPYING \
 	 debian/x2x/usr/share/doc/x2x/COPYING.win32 \
