@@ -1,3 +1,12 @@
+x2x (1.30-9) unstable; urgency=medium
+
+  * bump policy version
+  * bump to debhelper 13
+  * Add upstream metadata file
+  * track upstream/master
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Tue, 15 Sep 2020 10:09:06 +0100
+
 x2x (1.30-8) unstable; urgency=medium
 
   * merge upstream mods
