@@ -1230,13 +1230,14 @@ PDPYINFO pDpyInfo;
        screen real estate --09/29/99 gjb */
     /* make it InputOutput when argument -win-output presents,
        so to get window visibility change event and make -resurface work */
+    /* make it InputOutput so to make -resurface work*/ 
     trigger = pDpyInfo->trigger =
       XCreateWindow(fromDpy, root,
                     vertical ? triggerw : triggerLoc,
                     vertical ? triggerLoc : triggerw,
                     vertical ? fromWidth - (2*triggerw) : triggerw,
                     vertical ? triggerw : fromHeight - (2*triggerw),
-                    0, 0, doInputOnly?InputOnly:InputOutput, 0,
+                    0, 0, InputOutput, 0,
                     CWOverrideRedirect, &xswa);
 
     pDpyInfo->netWmWindowTypeAtom = XInternAtom(fromDpy, "_NET_WM_WINDOW_TYPE", True);
