@@ -1,3 +1,10 @@
+x2x (1.30-10) unstable; urgency=medium
+
+  * track upstream/master (bug fix)
+  * Update standards version to 4.6.0, no changes needed.
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Tue, 02 Nov 2021 15:08:28 +0000
+
 x2x (1.30-9) unstable; urgency=medium
 
   * bump policy version
