@@ -23,3 +23,5 @@ Description: Link two X displays together, simulating a multiheaded display
  same desk, as you can use a single keyboard and mouse to control
  both.  (The displays being controlled remotely must support the XTEST
  extension.  The servers shipped by Debian support this.)
+ .
+ Alternative: the "barrier" package.
