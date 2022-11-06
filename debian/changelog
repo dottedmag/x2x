@@ -1,3 +1,9 @@
+x2x (1.30-11) UNRELEASED; urgency=medium
+
+  * Update standards version to 4.6.1, no changes needed.
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Sun, 06 Nov 2022 10:14:12 -0000
+
 x2x (1.30-10) unstable; urgency=medium
 
   * track upstream/master (bug fix)
