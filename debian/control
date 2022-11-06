@@ -24,4 +24,6 @@ Description: Link two X displays together, simulating a multiheaded display
  both.  (The displays being controlled remotely must support the XTEST
  extension.  The servers shipped by Debian support this.)
  .
- Alternative: the "barrier" package.
+ Alternative: the "barrier" package, or its as-yet-unpackaged
+ fork-by-main-contributors "input-level", or the as-yet-unpackaged
+ "waynergy" for Wayland.
