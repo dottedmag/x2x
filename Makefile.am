@@ -46,7 +46,7 @@ CLEANFILES = lawyerese.c
 # -- Various --
 
 dist_doc_DATA = AUTHORS ChangeLog ChangeLog.old COPYING COPYING.win32	\
-    README docs/HostBasedAuthentication.txt				\
+    README.md docs/HostBasedAuthentication.txt				\
     docs/MIT-MAGIC-COOKIE-1.txt docs/SshTunneling.txt			\
     docs/X2xUsage.txt
 
