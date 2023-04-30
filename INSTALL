@@ -1,5 +1,5 @@
 Just build/install x2x as any other autotools-based program.
-See README for details installing on Fedora and Ubuntu.
+See README.md for details installing on Fedora and Ubuntu.
 
 Configuration options:
 
