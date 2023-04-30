@@ -25,10 +25,11 @@ Windows support includes code under GPLv2+.
 x2x was initially developed in DEC by David Chaiken.
 Current maintainer is Mikhail Gusarov.
 
+## Building on Various Systems
 
 ### Building on Arch
 
-1. `git clone https://github.com/dottedmag/x2x; cd x2x`
+1. `git clone https://github.com/dottedmag/x2x && cd x2x`
 2. `./bootstrap.sh`
 3. `sudo pacman -S libxext libxtst`
 4. `./configure`
@@ -36,18 +37,18 @@ Current maintainer is Mikhail Gusarov.
 
 If you want the simple solution, there is also a package in the [AUR](https://aur.archlinux.org/packages/x2x-git) for x2x.
 
-###  Building on Fedora 
+###  Building on Fedora
 
-1. `git clone https://github.com/dottedmag/x2x; cd x2x`
+1. `git clone https://github.com/dottedmag/x2x && cd x2x`
 2. `./bootstrap.sh`
 3. `sudo dnf -y install libXext-devel libXtst-devel`
 4. `./configure`
 5. `make && sudo make install`
 
-### Building on Ubuntu or Debian
+### Building on Debian or Debian-Derivative like Ubuntu
 
-1. `git clone https://github.com/dottedmag/x2x; cd x2x`
+1. `git clone https://github.com/dottedmag/x2x && cd x2x`
 2. `git checkout debian`
 3. `dpkg-checkbuilddeps` (and `sudo apt install` anything missing)
-4. fakeroot debian/rules binary
+4. `env DEB_RULES_REQUIRES_ROOT=no debian/rules binary`
 5. `sudo dpkg --install ../x2x_VERSION.deb`
