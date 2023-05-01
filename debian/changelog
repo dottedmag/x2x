@@ -1,11 +1,12 @@
-x2x (1.30-11) UNRELEASED; urgency=medium
+x2x (1.30-11) unstable; urgency=medium
 
-  * Update standards version to 4.6.1, no changes needed.
+  * Update standards version to 4.6.2, no changes needed.
   * Add pointer to alternative package "barrier" to description.
   * Bump policy
   * Rules do not require root
+  * Merge upstream documentation tweaks
 
- -- Barak A. Pearlmutter <bap@debian.org>  Sun, 30 Apr 2023 18:58:32 +0100
+ -- Barak A. Pearlmutter <bap@debian.org>  Mon, 01 May 2023 17:35:44 +0100
 
 x2x (1.30-10) unstable; urgency=medium
 
