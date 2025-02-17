@@ -137,46 +137,6 @@ extern Status DPMSForceLevel(Display *, unsigned short);
 #define EDGE_WEST   4 /* from display is on the west side of to display */
 
 /**********
- * functions
- **********/
-static void    ParseCommandLine();
-static Display *OpenAndCheckDisplay();
-static Bool    CheckTestExtension();
-#ifndef WIN_2_X
-static int     ErrorHandler();
-#endif
-static void    DoDPMSForceLevel();
-static void    DoX2X();
-static void    InitDpyInfo();
-static void    DoConnect();
-static void    DoDisconnect();
-static void    RegisterEventHandlers();
-static Bool    ProcessEvent();
-static Bool    ProcessMotionNotify();
-static Bool    ProcessExpose();
-static void    DrawWindowText();
-static Bool    ProcessEnterNotify();
-static Bool    ProcessButtonPress();
-static Bool    ProcessButtonRelease();
-static Bool    ProcessKeyEvent();
-static Bool    ProcessConfigureNotify();
-static Bool    ProcessClientMessage();
-static Bool    ProcessSelectionRequest();
-static void    SendPing();
-static Bool    ProcessPropertyNotify();
-static Bool    ProcessSelectionNotify();
-static void    SendSelectionNotify();
-static Bool    ProcessSelectionClear();
-static Bool    ProcessVisibility();
-static Bool    ProcessMapping();
-static void    FakeThingsUp();
-static void    FakeAction();
-static void    RefreshPointerMapping();
-static void    Usage();
-static void    *xmalloc();
-
-
-/**********
  * stuff for selection forwarding
  **********/
 typedef struct _dpyxtra {
@@ -186,16 +146,6 @@ typedef struct _dpyxtra {
   Bool pingInProg;
   Window propWin;
 } DPYXTRA, *PDPYXTRA;
-
-/**********
- * structures for recording state of buttons and keys
- **********/
-typedef struct _fakestr {
-  struct _fakestr *pNext;
-  int type;
-  KeySym thing;
-  KeyCode code;
-} FAKE, *PFAKE;
 
 #define FAKE_KEY    0
 #define FAKE_BUTTON 1
@@ -220,6 +170,17 @@ typedef struct _fakestr {
 
 /* max unreasonable coordinates before accepting it */
 #define MAX_UNREASONABLES 10
+
+/**********
+ * structures for recording state of buttons and keys
+ **********/
+typedef struct _fakestr {
+  struct _fakestr *pNext;
+  int type;
+  KeySym thing;
+  KeyCode code;
+} FAKE, *PFAKE;
+
 
 /**********
  * display information
@@ -321,7 +282,48 @@ typedef struct _sticky {
   KeySym keysym;
 } STICKY, *PSTICKY;
 
-typedef int  (*HANDLER)(); /* event handler function */
+typedef int  (*HANDLER)(Display *, PDPYINFO, XEvent *); /* event handler function */
+
+/**********
+ * functions
+ **********/
+static void    ParseCommandLine(int, char **);
+static Display *OpenAndCheckDisplay(char *);
+static Bool    CheckTestExtension(Display *);
+#ifndef WIN_2_X
+static int     ErrorHandler(Display *, XErrorEvent *);
+#endif
+static void    DoDPMSForceLevel(PSHADOW, CARD16);
+static void    DoX2X(Display *, Display *);
+static void    InitDpyInfo(PDPYINFO);
+static void    DoConnect(PDPYINFO);
+static void    DoDisconnect(PDPYINFO);
+static void    RegisterEventHandlers(PDPYINFO);
+static Bool    ProcessEvent(Display *, PDPYINFO);
+static Bool    ProcessMotionNotify(Display*, PDPYINFO, XMotionEvent*);
+static Bool    ProcessExpose();
+static void    DrawWindowText(PDPYINFO);
+static Bool    ProcessEnterNotify();
+static Bool    ProcessButtonPress();
+static Bool    ProcessButtonRelease();
+static Bool    ProcessKeyEvent();
+static Bool    ProcessConfigureNotify();
+static Bool    ProcessClientMessage();
+static Bool    ProcessSelectionRequest();
+static void    SendPing(Display *, PDPYXTRA);
+static Bool    ProcessPropertyNotify();
+static Bool    ProcessSelectionNotify();
+static void    SendSelectionNotify(XSelectionRequestEvent *);
+static Bool    ProcessSelectionClear();
+static Bool    ProcessVisibility();
+static Bool    ProcessMapping();
+static void    FakeThingsUp(PDPYINFO);
+static void    FakeAction(PDPYINFO, int, KeySym, Bool);
+static void    RefreshPointerMapping(Display *, PDPYINFO);
+static void    Usage();
+static void    *xmalloc(size_t);
+
+
 
 /* These prototypes need the typedefs */
 #ifdef WIN_2_X
