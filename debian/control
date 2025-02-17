@@ -1,11 +1,11 @@
 Source: x2x
 Maintainer: Barak A. Pearlmutter <bap@debian.org>
 Build-Depends: debhelper-compat (= 13),
-	pkg-config,
+	pkgconf,
 	libx11-dev, libxtst-dev, xutils-dev
 Section: x11
 Priority: optional
-Standards-Version: 4.6.2
+Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Homepage: https://github.com/dottedmag/x2x
 Vcs-Git: https://salsa.debian.org/debian/x2x.git
