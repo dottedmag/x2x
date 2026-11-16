@@ -1240,7 +1240,7 @@ PDPYINFO pDpyInfo;
                     vertical ? fromWidth - (2*triggerw) : triggerw,
                     vertical ? triggerw : fromHeight - (2*triggerw),
                     0, 0, InputOutput, 0,
-                    CWOverrideRedirect, &xswa);
+                    CWOverrideRedirect | CWBackPixel, &xswa);
 
     pDpyInfo->netWmWindowTypeAtom = XInternAtom(fromDpy, "_NET_WM_WINDOW_TYPE", True);
     pDpyInfo->netWmWindowTypeDockAtom = XInternAtom(fromDpy, "_NET_WM_WINDOW_TYPE_DOCK", True);
