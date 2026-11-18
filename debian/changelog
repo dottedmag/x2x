@@ -6,6 +6,7 @@ x2x (1.30-13) unstable; urgency=medium
   * Explicitly activate the dh single-binary addon.
   * Update standards version to 4.7.4.
   * Drop default Priority and redundant Rules-Requires-Root fields.
+  * Add debian/watch (version 5, GitHub template).
 
  -- Barak A. Pearlmutter <bap@debian.org>  Wed, 18 Nov 2026 09:40:58 +0000
 
